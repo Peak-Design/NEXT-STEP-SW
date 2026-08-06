@@ -6,24 +6,24 @@ using System.Windows.Forms;
 namespace Peak.NextStep
 {
     /// <summary>
-    /// Export options. Deliberately small: two decisions the user actually has
-    /// to make, each with the trade-off written next to it.
+    /// The export options. This dialog stays small on purpose. It shows only
+    /// the decisions the user must make, and the cost of each one next to it.
     ///
-    /// Two things about hosting a WinForms dialog inside SolidWorks, both of
-    /// which cost a round of "the text looks wrong":
+    /// A WinForms dialog inside SolidWorks has two traps. Each one cost a round
+    /// of "the text looks wrong".
     ///
-    ///   * Text rendering. Application.UseCompatibleTextRendering defaults to
-    ///     TRUE unless the host calls SetCompatibleTextRenderingDefault(false),
-    ///     which a native C++ host like SolidWorks never does. Every control
-    ///     then draws through GDI+, which antialiases in greyscale instead of
-    ///     using ClearType, and the result looks soft and slightly smeared next
-    ///     to every other dialog on screen. Each control has to opt out
-    ///     individually -- setting it once on the form does nothing.
+    ///   * Text rendering. Application.UseCompatibleTextRendering is TRUE until
+    ///     the host calls SetCompatibleTextRenderingDefault(false). A native C++
+    ///     host such as SolidWorks never calls it. Every control then draws
+    ///     through GDI+, which antialiases in greyscale instead of ClearType.
+    ///     The text looks soft next to every other dialog on the screen. Each
+    ///     control must refuse this by itself. A single setting on the form does
+    ///     nothing.
     ///
-    ///   * Layout. Hand-placed pixel bounds looked right on the machine they
-    ///     were written on and clipped the help text everywhere else: the
-    ///     message-box font is whatever the theme says it is, and GDI+ measures
-    ///     wider than GDI anyway. Everything here auto-sizes instead.
+    ///   * Layout. Pixel positions written by hand looked correct on one machine
+    ///     and clipped the help text on all the others. The message box font is
+    ///     whatever the theme selects, and GDI+ measures wider than GDI. Every
+    ///     control here sizes itself instead.
     /// </summary>
     public sealed class ExportOptionsDialog : Form
     {
@@ -38,9 +38,9 @@ namespace Peak.NextStep
         /// <summary>Wrap width for prose.</summary>
         private const int TextWidth = 470;
 
-        // Engineering material defaults OFF: some importers collapse every
-        // appearance into one material per CAD material when it is present,
-        // which hides the colour work this add-in exists to do.
+        // Engineering material is OFF by default. Some importers merge every
+        // appearance into one material for each CAD material when the file
+        // holds one. That hides the colour work this add-in exists to do.
         public ExportOptionsDialog(bool deInstanceDefault = true,
                                    bool engineeringMaterialDefault = false,
                                    bool includeHiddenDefault = false)
@@ -67,7 +67,7 @@ namespace Peak.NextStep
 
             var intro = Prose(
                 "SolidWorks flattens component and assembly level appearance overrides "
-                + "when it writes STEP. This addon restores them.",
+                + "when it writes STEP. This addon puts them back.",
                 SystemColors.ControlText);
             intro.Margin = new Padding(0, 0, 0, 10);
 
@@ -75,33 +75,33 @@ namespace Peak.NextStep
                                 deInstanceDefault);
             var deInstanceHelp = Prose(
                 "On: each overridden occurrence becomes its own part with its own "
-                + "colour. Duplicates geometry, but respects the SolidWorks appearance "
-                + "hierarchy in every reader.\n"
-                + "Off: geometry stays fully instanced and each occurrence's colour is "
-                + "written as occurrence level styling instead. Compact and correct per "
-                + "ISO 10303-46, but only readers that implement occurrence styling "
-                + "show it.",
+                + "colour. This duplicates geometry, but every reader then shows the "
+                + "SolidWorks appearance hierarchy.\n"
+                + "Off: the geometry stays fully instanced, and the colour of each "
+                + "occurrence becomes occurrence level styling. This output is compact "
+                + "and correct, but only readers that support occurrence styling show "
+                + "it.",
                 SystemColors.GrayText);
             deInstanceHelp.Margin = new Padding(20, 0, 0, 12);
 
             _engineeringMaterial = Check("Include engineering material (name and density)",
                                          engineeringMaterialDefault);
             var materialHelp = Prose(
-                "Writes the CAD material SolidWorks itself never exports, for tools that "
-                + "read material and density.\n"
-                + "With de-instancing on, each distinct appearance gets its own numbered "
-                + "variant of the name, so readers that build one material per name keep "
-                + "the colours apart.",
+                "Writes the CAD material that SolidWorks never exports, for tools that "
+                + "read a material name and density.\n"
+                + "With de-instancing on, each different appearance also gets its own "
+                + "numbered variant of the name. Readers that build one material for "
+                + "each name then keep the colours apart.",
                 SystemColors.GrayText);
             materialHelp.Margin = new Padding(20, 0, 0, 12);
 
             _includeHidden = Check("Include hidden components", includeHiddenDefault);
             var hiddenHelp = Prose(
-                "SolidWorks leaves hidden components out of a STEP file. On, they are "
-                + "shown for the duration of the export and hidden again afterwards, so "
-                + "they are written like any other component.\n"
-                + "Suppressed components are never exported either way, because resolving "
-                + "one would rebuild the assembly.",
+                "SolidWorks keeps hidden components out of a STEP file. When this "
+                + "option is on, the addon shows them for the export and hides them "
+                + "again afterwards.\n"
+                + "Neither setting exports suppressed components, because SolidWorks "
+                + "must rebuild the assembly to resolve one.",
                 SystemColors.GrayText);
             hiddenHelp.Margin = new Padding(20, 0, 0, 14);
 
@@ -169,9 +169,10 @@ namespace Peak.NextStep
         private static extern IntPtr GetActiveWindow();
 
         /// <summary>
-        /// Show the dialog owned by the SolidWorks window that invoked the
-        /// command, so it centres on SolidWorks and behaves as a modal child of
-        /// it rather than a stray top-level window. Returns false on cancel.
+        /// Shows the dialog. The SolidWorks window that started the command
+        /// owns it. The dialog therefore centres on SolidWorks and behaves as a
+        /// modal child of it, not as a separate top level window. Returns false
+        /// if the user cancels.
         /// </summary>
         public static bool Show(out bool deInstance, out bool engineeringMaterial,
                                 out bool includeHidden)

@@ -6,21 +6,21 @@ using System.Text.RegularExpressions;
 namespace Peak.NextStep.Core
 {
     /// <summary>
-    /// De-instance mode: give every overridden occurrence its own product,
-    /// geometry and plain STYLED_ITEM.
+    /// De-instance mode. Each overridden occurrence gets its own product, its
+    /// own geometry and a plain STYLED_ITEM.
     ///
-    /// Why this exists. The instanced encoding
-    /// (CONTEXT_DEPENDENT_OVER_RIDING_STYLED_ITEM) is correct per ISO 10303-46
-    /// but measured to be ignored by both Fusion 360 and STEPper NEXT, which
-    /// fall back to the referred part's colour. De-instancing reduces the
-    /// problem to plain per-solid colour, which every consumer reads, at the
-    /// cost of duplicated geometry.
+    /// Why this class exists. The instanced form,
+    /// CONTEXT_DEPENDENT_OVER_RIDING_STYLED_ITEM, is correct under ISO 10303-46.
+    /// But Fusion 360 and STEPper NEXT both ignore it and show the colour of the
+    /// referenced part. This was measured. De-instancing reduces the problem to
+    /// a plain colour on each solid, which every consumer reads. The cost is
+    /// duplicated geometry.
     ///
-    /// Copies are made per DISTINCT APPEARANCE, not per occurrence. Two
-    /// occurrences of one part that resolve to the same colour stay genuine
-    /// instances of a single product -- they only need separating when they
-    /// actually look different. Splitting them regardless would duplicate
-    /// geometry for no visible gain and cost the consumer its instancing.
+    /// This code makes one copy for each DIFFERENT APPEARANCE, not one for each
+    /// occurrence. Two occurrences of a part with the same colour stay true
+    /// instances of one product. They need separate products only when they look
+    /// different. To split them in every case would duplicate geometry for no
+    /// visible gain, and would take the instancing away from the consumer.
     /// </summary>
     public sealed class DeInstancer
     {
@@ -33,19 +33,20 @@ namespace Peak.NextStep.Core
             _log = log;
         }
 
-        /// <summary>One cloned copy of a part, ready to be coloured and shared.</summary>
+        /// <summary>One copy of a part, ready for a colour and for sharing.</summary>
         public sealed class PartCopy
         {
-            /// <summary>original id -> cloned id, for rewiring occurrences.</summary>
+            /// <summary>Maps an original id to a copied id, to point the
+            /// occurrences at the copy.</summary>
             public Dictionary<int, int> Map;
-            /// <summary>The cloned solid that carries the copy's colour, or -1.</summary>
+            /// <summary>The copied solid that holds the colour, or -1.</summary>
             public int SolidId;
             public int EntityCount;
         }
 
         /// <summary>
-        /// Contexts and units are shared by the whole file. Cloning them would
-        /// duplicate the unit system and can make readers reject the file.
+        /// The whole file shares the contexts and the units. A copy of them
+        /// duplicates the unit system, and some readers then reject the file.
         /// </summary>
         private static bool IsShared(string type)
         {
@@ -64,7 +65,8 @@ namespace Peak.NextStep.Core
             return false;
         }
 
-        /// <summary>Everything reachable from the roots that is not shared.</summary>
+        /// <summary>Every entity below the roots that the file does not
+        /// share.</summary>
         private HashSet<int> Closure(IEnumerable<int> roots)
         {
             var set = new HashSet<int>();
@@ -80,7 +82,8 @@ namespace Peak.NextStep.Core
             return set;
         }
 
-        /// <summary>Clone a set of entities, remapping internal references.</summary>
+        /// <summary>Copies a set of entities and points the internal references
+        /// at the copies.</summary>
         private Dictionary<int, int> CloneAll(HashSet<int> ids)
         {
             var map = new Dictionary<int, int>();
@@ -91,7 +94,7 @@ namespace Peak.NextStep.Core
                 string type = _step.TypeOf(id);
                 string args = _step.ArgsOf(id);
                 string remapped = Remap(args, map);
-                // Complex instances already carry their own type list in args.
+                // A complex instance already holds its own type list in args.
                 string line = type.StartsWith("COMPLEX:", StringComparison.Ordinal)
                     ? $"#{map[id]}={remapped};"
                     : $"#{map[id]}={type}{remapped};";
@@ -107,7 +110,7 @@ namespace Peak.NextStep.Core
                 return map.TryGetValue(id, out var n) ? "#" + n : m.Value;
             });
 
-        /// <summary>Rewrite one existing entity with references remapped.</summary>
+        /// <summary>Writes one existing entity again, with new references.</summary>
         private void RewireEntity(int id, Dictionary<int, int> map)
         {
             string type = _step.TypeOf(id);
@@ -119,20 +122,21 @@ namespace Peak.NextStep.Core
         }
 
         /// <summary>
-        /// Make one fresh copy of the part this occurrence references.
+        /// Makes one new copy of the part that this occurrence references.
         ///
-        /// Cloning and rewiring are deliberately separate calls: one copy is
-        /// shared by every occurrence that resolved to the same appearance, so
-        /// the copy is made once and pointed at N times.
+        /// The copy and the reference update are separate calls on purpose.
+        /// Every occurrence with the same appearance shares one copy. This code
+        /// therefore makes the copy once and points many occurrences at it.
         /// </summary>
         public PartCopy ClonePart(StepRewriter.OccurrenceRef occ)
         {
-            // The NAUO's second product_definition reference is the part.
+            // The second product_definition of the NAUO is the part.
             var nauoRefs = _step.Refs(occ.NauoId);
             int partPd = nauoRefs.LastOrDefault(r => _step.TypeOf(r) == "PRODUCT_DEFINITION");
             if (partPd == 0) { _log?.Invoke($"    NAUO #{occ.NauoId}: no part product_definition"); return null; }
 
-            // product_definition_shape -> shape_definition_representation -> shape_representation
+            // Walk product_definition_shape to shape_definition_representation
+            // to shape_representation.
             int pds = _step.ByType("PRODUCT_DEFINITION_SHAPE")
                            .FirstOrDefault(p => _step.Refs(p).Contains(partPd));
             int sdr = pds == 0 ? 0 : _step.ByType("SHAPE_DEFINITION_REPRESENTATION")
@@ -141,14 +145,15 @@ namespace Peak.NextStep.Core
                            .FirstOrDefault(r => _step.TypeOf(r) == "SHAPE_REPRESENTATION");
             if (partSr == 0) { _log?.Invoke($"    NAUO #{occ.NauoId}: no part shape_representation"); return null; }
 
-            // shape_representation_relationship links the part's SR to its B-rep.
+            // shape_representation_relationship joins the SR of the part to
+            // its B-rep.
             int srr = _step.ByType("SHAPE_REPRESENTATION_RELATIONSHIP")
                            .FirstOrDefault(s => _step.Refs(s).Contains(partSr));
             int absr = srr == 0 ? 0 : _step.Refs(srr).FirstOrDefault(
                            r => _step.TypeOf(r) == "ADVANCED_BREP_SHAPE_REPRESENTATION"
                              || _step.TypeOf(r) == "MANIFOLD_SURFACE_SHAPE_REPRESENTATION");
 
-            // The product chain: product_definition -> formation -> product.
+            // The product chain runs product_definition, formation, product.
             var chain = new List<int> { partPd, pds, sdr, partSr };
             if (srr != 0) chain.Add(srr);
             if (absr != 0) chain.Add(absr);
@@ -157,13 +162,14 @@ namespace Peak.NextStep.Core
             if (absr != 0) roots.Add(absr);
             var toClone = Closure(roots);
             foreach (var c in chain) if (!IsShared(_step.TypeOf(c))) toClone.Add(c);
-            // product_definition pulls in its formation and product already via
-            // Closure, but chain members added above may bring new refs.
+            // Closure already collects the formation and the product below
+            // product_definition. But the chain members above can add new
+            // references.
             foreach (var extra in Closure(chain)) toClone.Add(extra);
 
             var map = CloneAll(toClone);
 
-            // The cloned solid is what gets the copy's colour.
+            // The copied solid takes the colour of the copy.
             int solid = toClone.FirstOrDefault(i => _step.TypeOf(i) == "MANIFOLD_SOLID_BREP");
             return new PartCopy
             {
@@ -174,10 +180,11 @@ namespace Peak.NextStep.Core
         }
 
         /// <summary>
-        /// Point one occurrence at a copy: its NAUO's part product definition,
-        /// and the placement chain's reference to the part's shape
-        /// representation. Safe to call for several occurrences with the same
-        /// copy -- each rewires only its own entities.
+        /// Points one occurrence at a copy. This changes the part product
+        /// definition of its NAUO, and the reference from the placement chain to
+        /// the shape representation of the part. You can call this for several
+        /// occurrences with the same copy. Each call changes only its own
+        /// entities.
         /// </summary>
         public void PointOccurrenceAt(StepRewriter.OccurrenceRef occ, PartCopy copy)
         {
@@ -206,16 +213,18 @@ namespace Peak.NextStep.Core
         }
 
         /// <summary>
-        /// Recolour EVERY styled item that affects the part this occurrence
-        /// refers to, for the occurrence that keeps the original geometry.
+        /// Recolours EVERY styled item that affects the part behind this
+        /// occurrence. This applies to the occurrence that keeps the original
+        /// geometry.
         ///
-        /// SolidWorks writes two styled items per part -- one on the
-        /// MANIFOLD_SOLID_BREP and one on the ADVANCED_BREP_SHAPE_REPRESENTATION
-        /// -- and OCCT's reader lets the representation-level one win. Recolouring
-        /// only the solid leaves the old colour visible, which is exactly how
-        /// C4_component_override_2 came back orange instead of green.
+        /// SolidWorks writes two styled items for each part. One sits on the
+        /// MANIFOLD_SOLID_BREP and one sits on the
+        /// ADVANCED_BREP_SHAPE_REPRESENTATION. The OCCT reader lets the one at
+        /// representation level win. To recolour only the solid therefore leaves
+        /// the old colour in view. This is why C4_component_override_2 came back
+        /// orange instead of green.
         ///
-        /// Returns the number of styled items repointed.
+        /// Returns the number of styled items that this code changed.
         /// </summary>
         public int RecolourPart(StepRewriter.OccurrenceRef occ, Rgb colour, double transparency)
         {
@@ -230,12 +239,12 @@ namespace Peak.NextStep.Core
                             .Where(s => _step.Refs(s).Any(geometry.Contains)));
             if (mine.Count == 0) return 0;
 
-            // Prefer rewriting the existing COLOUR_RGB in place over building a
-            // new style chain and repointing at it. Repointing leaves the old
-            // chain in the file, unreferenced but still present -- dead
-            // FILL_AREA_STYLE_COLOUR entities carrying the ORIGINAL colour,
-            // which is both untidy and a plausible way for a reader to end up
-            // showing the colour we meant to replace.
+            // Write the existing COLOUR_RGB again, in place. Do not build a
+            // new style chain and point at that. A new chain leaves the old
+            // chain in the file. Nothing references it, but the dead
+            // FILL_AREA_STYLE_COLOUR entities still hold the ORIGINAL colour.
+            // That is untidy, and it gives a reader a way to show the colour
+            // that this code means to replace.
             int count = 0;
             foreach (var styled in mine)
             {
@@ -251,8 +260,8 @@ namespace Peak.NextStep.Core
                 }
                 else
                 {
-                    // Shared with styling we must not disturb: fall back to a
-                    // fresh chain for this item only.
+                    // Another styled item shares this colour and must not
+                    // change. Build a new chain for this item only.
                     RecolourStyledItem(styled, colour, transparency);
                     count++;
                 }
@@ -261,18 +270,18 @@ namespace Peak.NextStep.Core
         }
 
         /// <summary>
-        /// The geometric items belonging to the part this occurrence refers to:
-        /// its shape representation, its B-rep representation, its solids and
-        /// its faces.
+        /// The geometric items of the part behind this occurrence. These are its
+        /// shape representation, its B-rep representation, its solids and its
+        /// faces.
         ///
-        /// Faces are included because an override applied at or above the
-        /// component beats everything inside the part -- including per-face
-        /// colours, which SolidWorks exports correctly and which would
-        /// otherwise keep winning over the override we are applying. The
-        /// traversal to reach them is deliberately two levels deep
-        /// (solid -> shell -> face) rather than a full closure: descending into
-        /// the whole B-rep would walk every edge, vertex and surface in the
-        /// part for no gain.
+        /// The list holds the faces because an override at component level or
+        /// above beats everything inside the part. That includes the colour of
+        /// each face, which SolidWorks exports correctly. Without the faces in
+        /// this list, those colours keep winning over the override.
+        ///
+        /// The walk to the faces goes two levels deep, from solid to shell to
+        /// face. It is not a full closure. A walk through the whole B-rep would
+        /// visit every edge, vertex and surface in the part for no gain.
         /// </summary>
         private HashSet<int> PartGeometryOf(int nauoId)
         {
@@ -313,7 +322,7 @@ namespace Peak.NextStep.Core
             return found;
         }
 
-        /// <summary>solid -> shell -> face, two levels only.</summary>
+        /// <summary>Walks solid to shell to face, two levels only.</summary>
         private void AddFacesOf(int solid, HashSet<int> found)
         {
             foreach (var shell in _step.Refs(solid))
@@ -325,7 +334,7 @@ namespace Peak.NextStep.Core
             }
         }
 
-        /// <summary>Every COLOUR_RGB reachable from a styled item.</summary>
+        /// <summary>Every COLOUR_RGB below a styled item.</summary>
         private List<int> ColoursUnder(int styledItem)
         {
             var found = new List<int>();
@@ -336,9 +345,9 @@ namespace Peak.NextStep.Core
                 int id = stack.Pop();
                 if (!seen.Add(id) || !_step.Entities.ContainsKey(id)) continue;
                 if (_step.TypeOf(id) == "COLOUR_RGB") { found.Add(id); continue; }
-                // Do not descend into geometry: a styled item references the
-                // solid it styles, and that subtree holds no colours worth
-                // rewriting.
+                // Do not walk into the geometry. A styled item references the
+                // solid that it styles, and that branch holds no colour to
+                // change.
                 var t = _step.TypeOf(id);
                 if (t == "MANIFOLD_SOLID_BREP" || t == "ADVANCED_BREP_SHAPE_REPRESENTATION"
                  || t == "ADVANCED_FACE") continue;
@@ -348,17 +357,17 @@ namespace Peak.NextStep.Core
         }
 
         /// <summary>
-        /// colour id -> every styled item that reaches it. Built once from the
-        /// file SolidWorks wrote.
+        /// Maps a colour id to every styled item above it. This code builds the
+        /// map once, from the file that SolidWorks wrote.
         ///
-        /// The obvious implementation -- re-walk every styled item for every
-        /// colour -- is quadratic in styled items, and a part whose faces are
-        /// individually coloured has one per face. On a large assembly that is
-        /// the difference between an export and a hang.
+        /// The obvious method walks every styled item again for every colour.
+        /// Its cost grows with the square of the number of styled items. A part
+        /// with a colour on each face has one styled item for each face. On a
+        /// large assembly, that is the difference between an export and a hang.
         ///
-        /// Style chains we append ourselves are not indexed, and do not need to
-        /// be: their colours are freshly allocated ids that no pre-existing
-        /// styled item can reference.
+        /// The map holds no style chain that this code adds later. It does not
+        /// need to. Those chains use new colour ids, and no earlier styled item
+        /// can reference them.
         /// </summary>
         private Dictionary<int, HashSet<int>> _colourOwners;
 
@@ -381,9 +390,9 @@ namespace Peak.NextStep.Core
         }
 
         /// <summary>
-        /// True when this colour is reachable from some styled item outside the
-        /// set we are recolouring -- in which case rewriting it in place would
-        /// silently change another part's appearance.
+        /// True when a styled item outside the set holds this colour. To write
+        /// the colour again in place would then change the appearance of another
+        /// part, with no message.
         /// </summary>
         private bool IsReferencedOutside(int colourId, HashSet<int> ours)
         {
@@ -393,7 +402,7 @@ namespace Peak.NextStep.Core
             return false;
         }
 
-        /// <summary>Repoint one existing styled item at a fresh colour.</summary>
+        /// <summary>Points one existing styled item at a new colour.</summary>
         public void RecolourStyledItem(int styledItemId, Rgb colour, double transparency)
         {
             int psa = BuildStyleChain(colour, transparency);
@@ -408,7 +417,8 @@ namespace Peak.NextStep.Core
                 $"#{styledItemId}=STYLED_ITEM({m.Groups[1].Value},(#{psa}),#{m.Groups[3].Value});");
         }
 
-        /// <summary>Plain styled item on a solid -- what every consumer reads.</summary>
+        /// <summary>A plain styled item on a solid. Every consumer reads
+        /// this.</summary>
         public int AddPlainStyle(int itemId, Rgb colour, double transparency)
         {
             int psa = BuildStyleChain(colour, transparency);

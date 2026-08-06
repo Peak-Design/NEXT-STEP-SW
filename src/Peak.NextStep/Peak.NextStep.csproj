@@ -47,9 +47,8 @@
 
   <ItemGroup>
     <!--
-      SolidWorks reads these by absolute path at runtime, so they have to sit
-      beside the DLL rather than being embedded. Regenerate with
-      `python tools/make_icons.py` after editing the generator.
+      SolidWorks reads these files by absolute path while it runs. They must
+      therefore sit next to the DLL. They cannot be embedded resources.
     -->
     <Content Include="icons\*.png" Link="icons\%(Filename)%(Extension)">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

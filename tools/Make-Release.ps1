@@ -3,16 +3,16 @@
     Builds NEXT-STEP and packages a release archive.
 
 .DESCRIPTION
-    Produces dist\NEXT-STEP-<version>.zip containing the add-in, its interop
-    assemblies, its icons, the installer and the licence.
+    Makes dist\NEXT-STEP-<version>.zip. The archive holds the add-in, its
+    interop assemblies, its icons, the installer and the licence.
 
-    This runs locally rather than in CI on purpose. Building requires the
-    SolidWorks interop assemblies, which only exist on a machine with
-    SolidWorks installed, and GitHub's hosted runners do not have one. A CI
-    workflow that cannot compile the project would be theatre.
+    This script runs locally, not in CI, on purpose. A build needs the SolidWorks
+    interop assemblies, and they exist only on a machine with SolidWorks. The
+    hosted runners of GitHub have no SolidWorks. A CI workflow that cannot
+    compile the project gives only a false sense of cover.
 
 .PARAMETER Tag
-    Also create the git tag for this version. Does not push.
+    Also makes the git tag for this version. It does not push.
 
 .EXAMPLE
     .\tools\Make-Release.ps1
@@ -32,10 +32,10 @@ $dist = Join-Path $repo 'dist'
 function Step { param($m) Write-Host "==> $m" -ForegroundColor Cyan }
 function Fail { param($m) Write-Host "ERROR: $m" -ForegroundColor Red; exit 1 }
 
-# SolidWorks locks the DLL while the add-in is loaded, and a build that
-# silently kept the previous binary would ship the wrong bits.
+# SolidWorks locks the DLL while the add-in is loaded. A build that keeps the
+# previous binary with no message would ship the wrong file.
 if (Get-Process -Name 'SLDWORKS' -ErrorAction SilentlyContinue) {
-    Fail 'SolidWorks is running. Close it so the build can replace the DLL.'
+    Fail 'SolidWorks is running. Close it, so that the build can replace the DLL.'
 }
 
 Step 'Building Release'
@@ -47,7 +47,7 @@ if (-not (Test-Path $dll)) { Fail "built DLL not found at $dll" }
 
 $version = [Diagnostics.FileVersionInfo]::GetVersionInfo($dll).ProductVersion
 if (-not $version) { Fail 'could not read version from the built DLL' }
-$version = ($version -split '\+')[0]   # strip any build metadata
+$version = ($version -split '\+')[0]   # remove any build metadata
 Step "Version $version"
 
 $stage = Join-Path $dist "NEXT-STEP-$version"
@@ -55,8 +55,8 @@ if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
 New-Item -ItemType Directory -Path (Join-Path $stage 'app') -Force | Out-Null
 
 Step 'Staging payload'
-# Explicit list rather than a wildcard: the build directory also collects
-# nextstep-debug.log and PDBs, and neither belongs in a release.
+# This is a list, not a wildcard. The build directory also collects
+# nextstep-debug.log and PDB files. A release needs neither.
 $payload = @(
     'Peak.NextStep.dll',
     'SolidWorks.Interop.sldworks.dll',

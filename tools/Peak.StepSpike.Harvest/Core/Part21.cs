@@ -8,14 +8,15 @@ using System.Text.RegularExpressions;
 namespace Peak.NextStep.Core
 {
     /// <summary>
-    /// Minimal ISO 10303-21 reader/rewriter.
+    /// A small ISO 10303-21 reader and writer.
     ///
-    /// Deliberately text-level and additive: the exporter's whole value is that
-    /// SolidWorks' geometry section is left byte-identical (no OCCT
-    /// re-tolerancing, no lost PMI, and SolidWorks' own per-face styling --
-    /// which S0 proved is correct -- survives exactly as written). We only
-    /// append presentation entities and, where required, rewrite the styled
-    /// items that are wrong.
+    /// This class works on the text and only adds to it. That is deliberate. The
+    /// value of the exporter is that the geometry section of SolidWorks stays
+    /// byte for byte the same. OCCT does not re-tolerance it, no PMI
+    /// disappears, and the styling that SolidWorks writes for each face survives
+    /// exactly as written. S0 proved that this styling is correct. This class
+    /// therefore adds presentation entities, and changes only the styled items
+    /// that are wrong.
     /// </summary>
     public sealed class Part21
     {
@@ -26,7 +27,8 @@ namespace Peak.NextStep.Core
         public string Text { get; private set; }
         public string Path { get; }
 
-        /// <summary>id -> (type, argument text including the outer parens)</summary>
+        /// <summary>Maps an id to a type and the argument text. The argument
+        /// text includes the outer brackets.</summary>
         public Dictionary<int, KeyValuePair<string, string>> Entities { get; } =
             new Dictionary<int, KeyValuePair<string, string>>();
 
@@ -62,7 +64,8 @@ namespace Peak.NextStep.Core
             }
         }
 
-        /// <summary>Split on ';' while respecting Part 21 quoted strings ('' escape).</summary>
+        /// <summary>Splits on the ';' character, and keeps the quoted strings of
+        /// Part 21 whole. Two quote marks escape one quote mark.</summary>
         private static IEnumerable<string> SplitStatements(string text)
         {
             var buf = new StringBuilder();
@@ -114,7 +117,8 @@ namespace Peak.NextStep.Core
             return outIds;
         }
 
-        /// <summary>First quoted string in an entity's arguments (its name).</summary>
+        /// <summary>The first quoted string in the arguments of an entity. This
+        /// is its name.</summary>
         public string NameOf(int id)
         {
             var args = ArgsOf(id);
@@ -126,12 +130,12 @@ namespace Peak.NextStep.Core
         private readonly List<string> _appended = new List<string>();
 
         /// <summary>
-        /// Append a new entity, and register it so later passes can see it.
+        /// Adds a new entity, and records it so that a later pass can find it.
         ///
-        /// Registration matters: de-instancing appends cloned PRODUCT entities,
-        /// and the material pass afterwards looks products up by type. Without
-        /// this the clones are invisible and only the original part gets a
-        /// material.
+        /// The record matters. De-instancing adds copies of PRODUCT entities,
+        /// and the material pass afterwards finds the products by type. Without
+        /// the record, the material pass cannot see the copies, and only the
+        /// original part gets a material.
         /// </summary>
         public void Append(string entityLine)
         {
@@ -159,7 +163,8 @@ namespace Peak.NextStep.Core
             if (id >= _nextId) _nextId = id + 1;
         }
 
-        /// <summary>Replace one entity's whole statement in the source text.</summary>
+        /// <summary>Replaces the whole statement of one entity in the source
+        /// text.</summary>
         public void Replace(int id, string newStatement)
         {
             var m = Regex.Match(Text, $@"^#{id}\s*=\s*.*?;",

@@ -6,16 +6,16 @@ using SolidWorks.Interop.sldworks;
 namespace Peak.NextStep.Core
 {
     /// <summary>
-    /// Match SolidWorks component occurrences to the occurrences in its own
-    /// STEP output.
+    /// Matches the component occurrences of SolidWorks to the occurrences in the
+    /// STEP output of SolidWorks.
     ///
-    /// SolidWorks names them only 'NAUO1', 'NAUO2' ... with no component name,
-    /// so identity has to come from the placement transform. Component
-    /// transforms are in metres; the STEP file is in millimetres.
+    /// SolidWorks names them 'NAUO1', 'NAUO2' and so on, with no component name.
+    /// The identity must therefore come from the placement transform. A
+    /// component transform is in metres. The STEP file is in millimetres.
     ///
-    /// A silent wrong match is the failure mode that matters -- it produces a
-    /// confidently wrong colour -- so an unmatched occurrence is reported and
-    /// left alone rather than guessed at.
+    /// A wrong match with no message is the failure that matters, because it
+    /// gives a wrong colour that looks correct. This code therefore reports an
+    /// occurrence that it cannot match, and leaves it alone. It does not guess.
     /// </summary>
     public sealed class OccurrenceMatcher
     {
@@ -42,11 +42,12 @@ namespace Peak.NextStep.Core
                 .OfType<IComponent2>().ToList();
             var used = new HashSet<int>();
 
-            // Components SolidWorks did not write have no occurrence to find.
-            // Counting them here would warn that the mapping is not 1:1 on
-            // every export of an assembly with anything hidden, and then
-            // report each one as unmatched -- two false alarms for correct
-            // behaviour, which is how a real warning gets ignored.
+            // A component that SolidWorks did not write has no occurrence to
+            // find. To count it here gives a warning that the mapping is not 1
+            // to 1, on every export of an assembly with a hidden component. This
+            // code would then report each one as unmatched. Those are two false
+            // alarms for correct behaviour, and they teach the user to ignore a
+            // real warning.
             var expected = occurrences.Where(o => o.Exported).ToList();
             int excluded = occurrences.Count - expected.Count;
             if (excluded > 0)
@@ -80,8 +81,8 @@ namespace Peak.NextStep.Core
 
                 if (best != null && bestDist <= ToleranceMm)
                 {
-                    // Two occurrences at the same place would make the match
-                    // ambiguous; say so rather than picking one.
+                    // Two occurrences at the same position make the match
+                    // unclear. Report this instead of a choice.
                     if (secondDist <= ToleranceMm)
                         _log?.Invoke($"  WARNING: {occ.Path} is ambiguous -- two occurrences " +
                                      $"within {ToleranceMm} mm; taking NAUO #{best.NauoId}");

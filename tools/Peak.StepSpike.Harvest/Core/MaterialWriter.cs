@@ -7,7 +7,8 @@ namespace Peak.NextStep.Core
 {
     public sealed class PartMaterial
     {
-        /// <summary>The STEP product name, which SolidWorks names after the part file.</summary>
+        /// <summary>The STEP product name. SolidWorks takes it from the part
+        /// file name.</summary>
         public string ProductName;
         public string Name;
         public string Database;
@@ -16,19 +17,19 @@ namespace Peak.NextStep.Core
     }
 
     /// <summary>
-    /// Writes engineering material (name, description, density) into the STEP
-    /// file. SolidWorks does not export this at all, in any AP.
+    /// Writes the engineering material into the STEP file. This is the name, the
+    /// description and the density. SolidWorks exports none of it, in any AP.
     ///
-    /// The encoding is the one OCCT itself writes and reads, verified against
-    /// STEPper NEXT's own baselines (ci/baselines/mat_ap214.step):
+    /// This code uses the form that OCCT itself writes and reads. It was checked
+    /// against the STEPper NEXT baselines in ci/baselines/mat_ap214.step:
     ///
     ///     PROPERTY_DEFINITION('material property','material name',#pd)
     ///       -> REPRESENTATION -> DESCRIPTIVE_REPRESENTATION_ITEM(name, description)
     ///     PROPERTY_DEFINITION('material property','density',#pd)
     ///       -> REPRESENTATION -> MEASURE_REPRESENTATION_ITEM('density', value, #kgPerM3)
     ///
-    /// AP242 is NOT required for this: the emission is byte-identical in AP214
-    /// and AP242, so no MBD licence is involved (FINDINGS.md 3b.1).
+    /// AP242 is NOT necessary for this. The output is the same in AP214 and in
+    /// AP242, so no MBD licence applies. See FINDINGS.md 3b.1.
     /// </summary>
     public sealed class MaterialWriter
     {
@@ -42,7 +43,8 @@ namespace Peak.NextStep.Core
             _log = log;
         }
 
-        /// <summary>Reuse an existing representation context rather than inventing one.</summary>
+        /// <summary>Uses an existing representation context. Does not make a
+        /// new one.</summary>
         private int AnyContext()
         {
             foreach (var kv in _step.Entities)
@@ -53,22 +55,24 @@ namespace Peak.NextStep.Core
         }
 
         /// <summary>
-        /// The density unit, created once per file.
+        /// The density unit. This code makes it once for each file.
         ///
-        /// This replicates OCCT's own encoding exactly, taken from
+        /// The form here copies the OCCT form exactly. It comes from
         /// ci/baselines/mat_ap214.step:
         ///
         ///     DERIVED_UNIT(( DERIVED_UNIT_ELEMENT(&lt;gram&gt;, 3.),
         ///                    DERIVED_UNIT_ELEMENT(&lt;centimetre&gt;, 2.) ))
         ///
-        /// It is NOT dimensionally kg/m^3 -- the exponents do not describe
-        /// mass/length^3 in any reading -- but it is what OCCT writes and what
-        /// its reader round-trips, and STEPper NEXT reads density through OCCT.
-        /// A physically-correct DERIVED_UNIT of (kilogram, 1) and (metre, -3)
-        /// was tried first and came back as 0.0078 instead of 7800, because the
-        /// reader rescaled it against the file's millimetre length unit.
-        /// Matching the encoding that demonstrably works beats being right on
-        /// paper and wrong in the consumer.
+        /// The dimensions are NOT kg/m^3. No reading of the exponents gives
+        /// mass divided by length cubed. But OCCT writes this form, its reader
+        /// returns the same value, and STEPper NEXT reads the density through
+        /// OCCT.
+        ///
+        /// A correct DERIVED_UNIT of (kilogram, 1) and (metre, -3) was tried
+        /// first. It came back as 0.0078 instead of 7800, because the reader
+        /// scaled it against the millimetre length unit of the file. A form that
+        /// works is better than a form that is correct on paper and wrong in the
+        /// consumer.
         /// </summary>
         private int DensityUnit()
         {
@@ -88,9 +92,9 @@ namespace Peak.NextStep.Core
         }
 
         /// <summary>
-        /// Blender truncates material names at 60 characters, so a suffix
-        /// appended past that would be cut off and two buckets would collapse
-        /// back into one material. The base name gives way instead.
+        /// Blender cuts a material name at 60 characters. A suffix after that
+        /// point disappears, and two groups then merge into one material again.
+        /// The base name gives way instead.
         /// </summary>
         private const int MaxNameLength = 60;
 
@@ -104,23 +108,25 @@ namespace Peak.NextStep.Core
         }
 
         /// <summary>
-        /// Attach materials to every product whose name matches. Returns how
-        /// many products were given a material.
+        /// Attaches a material to every product whose name matches. Returns the
+        /// number of products that got a material.
         ///
-        /// bucketIndexByProduct, when supplied, splits one CAD material into
-        /// one named variant per appearance bucket: "Plain Carbon Steel",
-        /// "Plain Carbon Steel.001" and so on.
+        /// With bucketIndexByProduct, this code splits one CAD material into one
+        /// named variant for each appearance group. The names are then
+        /// "Plain Carbon Steel", "Plain Carbon Steel.001" and so on.
         ///
-        /// This is a workaround with a cost, and the cost is worth stating.
-        /// STEP has no association between a material and an appearance -- the
-        /// two are deliberately separate, and no entity in AP214 or AP242 links
-        /// them. Consumers that build one material per material NAME therefore
-        /// collapse every differently-coloured copy of a part into a single
-        /// material and lose the colours. Numbering the name per bucket makes
-        /// those consumers produce one material per colour instead. The price
-        /// is that a file exported this way reports "Plain Carbon Steel.001" to
-        /// anything reading the material properly, which is not the name of a
-        /// material. It is opt-in for that reason.
+        /// This is a workaround, and it has a cost that is worth stating. STEP
+        /// has no relation between a material and an appearance. The two are
+        /// separate by design, and no entity in AP214 or AP242 joins them. A
+        /// consumer that builds one material for each material NAME therefore
+        /// merges every copy of a part into one material and loses the colours.
+        /// A number in the name makes those consumers build one material for
+        /// each colour.
+        ///
+        /// The price is the name itself. The file reports
+        /// "Plain Carbon Steel.001" to any tool that reads the material
+        /// correctly, and that is not the name of a material. The user must
+        /// therefore select this behaviour.
         /// </summary>
         public int Apply(IEnumerable<PartMaterial> materials,
                          IDictionary<int, int> bucketIndexByProduct = null)
@@ -184,7 +190,8 @@ namespace Peak.NextStep.Core
             _step.Append($"#{pdr}=PROPERTY_DEFINITION_REPRESENTATION(#{pdef},#{rep});");
         }
 
-        /// <summary>PRODUCT &lt;- PRODUCT_DEFINITION_FORMATION &lt;- PRODUCT_DEFINITION.</summary>
+        /// <summary>Walks PRODUCT_DEFINITION back to
+        /// PRODUCT_DEFINITION_FORMATION and then to PRODUCT.</summary>
         private int ProductDefinitionOf(int product)
         {
             var formations = _step.ByType("PRODUCT_DEFINITION_FORMATION")

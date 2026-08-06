@@ -3,14 +3,14 @@
     Installs or removes the NEXT-STEP SolidWorks add-in.
 
 .DESCRIPTION
-    Copies the add-in beside its interop assemblies and icons, then registers
-    it for COM. Registration writes to HKLM, so this needs administrator
-    rights and self-elevates if it does not have them.
+    Copies the add-in with its interop assemblies and its icons, then registers
+    it for COM. Registration writes to HKLM, so this script needs administrator
+    rights. It asks for them if it does not have them.
 
-    RegAsm /codebase records the DLL's location in the registry, so the files
-    must be in their final home before registering. That is why this copies
-    first and registers second, and why moving the install directory
-    afterwards breaks the add-in until it is re-registered.
+    RegAsm /codebase records the location of the DLL in the registry. The files
+    must therefore be in their final place before registration. That is why this
+    script copies first and registers second. If you move the install directory
+    afterwards, the add-in stops working until you register it again.
 
 .PARAMETER InstallDir
     Where to install. Defaults to "%ProgramFiles%\NEXT-STEP".
@@ -19,9 +19,8 @@
     Unregister and delete the installation.
 
 .PARAMETER Force
-    Continue even if SolidWorks is running. The copy will fail if SolidWorks
-    has the DLL loaded, so this only helps when it is running without the
-    add-in.
+    Continues even when SolidWorks runs. The copy fails if SolidWorks has the
+    DLL loaded, so this helps only when SolidWorks runs without the add-in.
 
 .EXAMPLE
     .\Install-NEXT-STEP.ps1
@@ -52,15 +51,16 @@ function Wait-IfInteractive {
 }
 
 <#
-Run RegAsm and return its exit code, capturing output to files.
+Runs RegAsm and returns its exit code. The output goes to files.
 
-Not `& $regasm ... 2>&1`: in Windows PowerShell 5.1 that wraps every stderr
-line from a native executable in an ErrorRecord, and under
-$ErrorActionPreference = 'Stop' the first one aborts the script. RegAsm always
-writes warning RA0000 to stderr for an unsigned assembly registered with
-/codebase -- which is every SolidWorks add-in -- so the redirect turns a
-routine warning into a failed install that has already deleted the previous
-registration. Start-Process keeps the streams outside PowerShell entirely.
+Do not write `& $regasm ... 2>&1`. In Windows PowerShell 5.1 that wraps every
+stderr line from a native program in an ErrorRecord. With
+$ErrorActionPreference = 'Stop', the first line then stops the script.
+
+RegAsm always writes warning RA0000 to stderr for an unsigned assembly with
+/codebase, and that is every SolidWorks add-in. The redirection therefore turns
+a routine warning into a failed install, after the script has already deleted
+the previous registration. Start-Process keeps the streams out of PowerShell.
 #>
 function Invoke-RegAsm {
     param([string] $RegAsm, [string[]] $Arguments, [ref] $Output)
@@ -83,16 +83,16 @@ function Invoke-RegAsm {
 }
 
 <#
-Delete every trace of the COM registration.
+Deletes every part of the COM registration.
 
-RegAsm keys InprocServer32 by ASSEMBLY VERSION, so unregistering version 0.2.0
-leaves version 0.1.0's subkey behind, still naming a CodeBase path that the
-upgrade has just overwritten or deleted. Those stale subkeys accumulate one per
-release and are a genuinely confusing failure: the add-in appears registered,
-and loads the wrong file or none at all.
+RegAsm names each InprocServer32 subkey after the ASSEMBLY VERSION. To
+unregister version 0.2.0 therefore leaves the subkey of version 0.1.0 in place.
+That subkey still names a CodeBase path that the upgrade has replaced or
+deleted. One old subkey collects for each release, and the result confuses
+everybody: the add-in looks registered, but it loads the wrong file, or no file.
 
-Sweeping the whole CLSID tree makes install and uninstall idempotent regardless
-of what any previous version left behind.
+This function removes the whole CLSID tree. Install and uninstall then give the
+same result whatever an earlier version left behind.
 #>
 function Remove-ComRegistration {
     $paths = @(
@@ -103,8 +103,9 @@ function Remove-ComRegistration {
         if (Test-Path $p) { Remove-Item $p -Recurse -Force -ErrorAction SilentlyContinue }
     }
 
-    # The add-in entries under each SolidWorks version. [ComUnregisterFunction]
-    # normally removes these, but it cannot run if the DLL is already gone.
+    # The add-in entries under each SolidWorks version.
+    # [ComUnregisterFunction] usually removes these, but it cannot run when the
+    # DLL is already gone.
     $swRoot = 'HKLM:\SOFTWARE\SolidWorks'
     if (-not (Test-Path $swRoot)) { return }
     foreach ($k in Get-ChildItem $swRoot -ErrorAction SilentlyContinue) {
@@ -148,9 +149,9 @@ if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administra
 
 # ------------------------------------------------------------------- checks
 if ((Get-Process -Name 'SLDWORKS' -ErrorAction SilentlyContinue) -and -not $Force) {
-    Write-Bad 'SolidWorks is running. Close it and run this again.'
-    Write-Step 'SolidWorks holds the add-in DLL open while loaded, so the files'
-    Write-Step 'cannot be replaced until it exits.'
+    Write-Bad 'SolidWorks is running. Close it and start this again.'
+    Write-Step 'SolidWorks holds the add-in DLL open while the add-in is loaded.'
+    Write-Step 'The files cannot change until SolidWorks closes.'
     Wait-IfInteractive
     exit 1
 }
@@ -171,9 +172,9 @@ if ($Uninstall) {
         Write-Step 'Unregistering...'
         $out = $null
         $code = Invoke-RegAsm $regasm @("`"$installedDll`"", '/unregister') ([ref]$out)
-        if ($code -ne 0) { Write-Warn "RegAsm returned $code; cleaning up the registry directly" }
+        if ($code -ne 0) { Write-Warn "RegAsm returned $code. Cleaning the registry directly." }
     } else {
-        Write-Warn "No installation found at $InstallDir; cleaning up the registry anyway"
+        Write-Warn "No installation at $InstallDir. Cleaning the registry anyway."
     }
 
     Remove-ComRegistration
@@ -188,7 +189,7 @@ if ($Uninstall) {
     if ($left.Count -eq 0) {
         Write-Good 'Removed. Restart SolidWorks if it is open.'
     } else {
-        Write-Warn "Registry entries remain for: $($left -join ', ')"
+        Write-Warn "Registry entries are still present for: $($left -join ', ')"
     }
     Wait-IfInteractive
     exit 0
@@ -197,7 +198,7 @@ if ($Uninstall) {
 # ------------------------------------------------------------------ install
 $payload = Join-Path $PSScriptRoot 'app'
 if (-not (Test-Path (Join-Path $payload $DllName))) {
-    Stop-Here "Add-in files not found in $payload. Run this from the extracted release archive, keeping the app folder next to this script."
+    Stop-Here "No add-in files in $payload. Start this script from the extracted release archive, and keep the app folder next to it."
 }
 
 $version = try {
@@ -214,8 +215,8 @@ if (Test-Path $installedDll) {
     Invoke-RegAsm $regasm @("`"$installedDll`"", '/unregister') ([ref]$out) | Out-Null
 }
 
-# Clear stale entries from any earlier version before writing the new ones,
-# so exactly one InprocServer32 version subkey exists afterwards.
+# Remove the entries of any earlier version before this script writes the new
+# ones. Exactly one InprocServer32 version subkey then remains.
 Remove-ComRegistration
 
 Write-Step 'Copying files...'
@@ -226,9 +227,10 @@ Write-Step 'Registering...'
 $out = $null
 $code = Invoke-RegAsm $regasm @("`"$installedDll`"", '/codebase') ([ref]$out)
 
-# RA0000 warns that /codebase with an unsigned assembly can shadow other
-# assemblies. It is expected here and is not a failure: the add-in is not
-# strong-named, and /codebase is how SolidWorks finds a DLL outside the GAC.
+# RA0000 warns that /codebase with an unsigned assembly can hide other
+# assemblies. That warning is expected here, and is not a failure. The add-in
+# has no strong name, and /codebase is how SolidWorks finds a DLL outside the
+# GAC.
 $real = $out | Where-Object { $_ -notmatch 'RA0000' -and $_ -notmatch '^\s*$' }
 if ($code -ne 0) {
     Write-Bad "Registration failed (exit $code):"
@@ -243,14 +245,14 @@ $found = Get-RegisteredVersions
 Write-Host ''
 if ($found.Count -gt 0) {
     Write-Good "Installed for: $($found -join ', ')"
-    Write-Step 'Start SolidWorks, then enable it under Tools > Add-Ins if it is'
-    Write-Step 'not already ticked. The Export STEP+ button appears on the'
-    Write-Step 'NEXT-STEP tab for parts and assemblies.'
+    Write-Step 'Start SolidWorks. If NEXT-STEP is not already ticked, tick it'
+    Write-Step 'in Tools > Add-Ins. The Export STEP+ button is on the NEXT-STEP'
+    Write-Step 'tab, for parts and for assemblies.'
 } else {
-    # RegAsm can succeed while [ComRegisterFunction] finds nothing to write to.
-    # Reporting success here would send the user to an empty Add-Ins dialog.
-    Write-Bad 'Registered, but no SolidWorks installation was found to register into.'
-    Write-Step 'Install SolidWorks first, then run this again.'
+    # RegAsm can succeed while [ComRegisterFunction] finds no place to write.
+    # A report of success here sends the user to an empty Add-Ins dialog.
+    Write-Bad 'Registered, but this script found no SolidWorks installation.'
+    Write-Step 'Install SolidWorks first, then start this script again.'
     Wait-IfInteractive
     exit 1
 }

@@ -1,38 +1,38 @@
 # Releasing
 
-The whole procedure is four commands. Read the "why" sections only if
-something goes wrong.
+The procedure is four commands. Read the reasons below only if something goes
+wrong.
 
 ## Versioning
 
-One number, in one place: `<Version>` in
+There is one version number, in one place. It is `<Version>` in
 [src/Peak.NextStep/Peak.NextStep.csproj](src/Peak.NextStep/Peak.NextStep.csproj).
 
-The add-in reads it back off its own assembly, the installer reads it off the
-built DLL, and the release script derives the git tag from it. Nothing else
-stores a version, so nothing else can disagree.
+The add-in reads it from its own assembly. The installer reads it from the built
+DLL. The release script makes the git tag from it. Nothing else stores a
+version, so nothing else can disagree.
 
-Bump it as `MAJOR.MINOR.PATCH`:
+Change it as `MAJOR.MINOR.PATCH`:
 
-| Change | Bump |
+| Change | New number |
 |---|---|
-| Bug fix, no behaviour change users must know about | PATCH — `0.1.0` → `0.1.1` |
-| New option, new export behaviour | MINOR — `0.1.0` → `0.2.0` |
-| Output changes in a way that breaks an existing workflow | MAJOR |
+| A repair, with no change that the user must know about | PATCH: `0.1.0` to `0.1.1` |
+| A new option, or new export behaviour | MINOR: `0.1.0` to `0.2.0` |
+| Output changes, and an existing workflow stops working | MAJOR |
 
-Below `1.0.0` the convention is that MINOR may break things. Once the export
-format is settled, release `1.0.0` and hold to the table above.
+Below `1.0.0`, a MINOR release can break things. After the export format
+settles, release `1.0.0` and then follow the table above.
 
-## Cutting a release
+## Make a release
 
 ```powershell
-# 1. Bump <Version> in the csproj, and add the entry to CHANGELOG.md.
+# 1. Change <Version> in the csproj. Add the entry to CHANGELOG.md.
 
 # 2. Commit those two edits.
 git add -A
 git commit -m "Release 0.2.0"
 
-# 3. Build, package and tag. Close SolidWorks first.
+# 3. Close SolidWorks. Then build, package and tag.
 .\tools\Make-Release.ps1 -Tag
 
 # 4. Push the commit and the tag.
@@ -40,20 +40,20 @@ git push
 git push --tags
 ```
 
-Then on GitHub: **Releases → Draft a new release**, choose the tag you just
-pushed, paste the CHANGELOG entry as the description, and attach
+Then open GitHub. Select **Releases**, then **Draft a new release**. Select the
+tag that you pushed. Paste the CHANGELOG entry as the description. Attach
 `dist\NEXT-STEP-<version>.zip`.
 
-`Make-Release.ps1` refuses to tag a dirty working tree, so step 2 cannot be
-skipped by accident.
+`Make-Release.ps1` refuses to tag a tree with uncommitted changes. You therefore
+cannot skip step 2 by accident.
 
-## What the release archive contains
+## What the release archive holds
 
 ```
 NEXT-STEP-<version>/
-  Install.bat              double-click to install
+  Install.bat              double-click this to install
   Uninstall.bat
-  Install-NEXT-STEP.ps1    the actual installer; self-elevates
+  Install-NEXT-STEP.ps1    the installer itself. It asks for admin rights.
   LICENSE
   THIRD-PARTY-NOTICES.md
   README.md
@@ -63,40 +63,37 @@ NEXT-STEP-<version>/
     icons/*.png
 ```
 
-The interop assemblies ship with the archive deliberately. They are
-strong-named, there are no copies in the GAC, and SolidWorks publishes no
-binding redirects — so on a SolidWorks version newer than the one the add-in
-was compiled against, the only thing that can satisfy the reference is a copy
-sitting next to the DLL. Without them the add-in fails to load on every
-version except the one it was built for.
+The archive holds the interop assemblies on purpose. They have strong names, no
+copies exist in the GAC, and SolidWorks publishes no binding redirects. On a
+SolidWorks newer than the one that built the add-in, only a copy next to the DLL
+can satisfy the reference. Without these files, the add-in loads on one
+SolidWorks version and fails on all the others.
 
 ## Why there is no CI build
 
-Building needs `SolidWorks.Interop.*.dll` from a SolidWorks installation.
-GitHub's hosted runners do not have SolidWorks and cannot have it. A workflow
-that could not compile the project would only give a false sense of coverage,
-so releases are built on a machine that has SolidWorks — which is the same
-machine the add-in is tested on.
+A build needs `SolidWorks.Interop.*.dll` from a SolidWorks installation. The
+hosted runners of GitHub have no SolidWorks, and cannot have one. A workflow
+that cannot compile the project gives only a false sense of cover. Releases are
+therefore built on a machine with SolidWorks, which is the same machine that
+tests the add-in.
 
-If this ever needs CI, the options are a self-hosted runner on a licensed
-machine, or committing the three interop assemblies to the repository. The
-second is what Dassault's `api\redist` directory is for, but it puts their
-binaries in a public repo, which is a decision worth making deliberately
-rather than by drift.
+If this project ever needs CI, there are two options. The first is a self-hosted
+runner on a licensed machine. The second is to commit the three interop
+assemblies to the repository. The `api\redist` directory of Dassault exists for
+that purpose, but it puts their binaries in a public repository. Make that
+choice on purpose, not by accident.
 
-## Before tagging
+## Before you tag
 
-- [ ] Version bumped in the csproj
-- [ ] CHANGELOG entry written
-- [ ] Icons regenerated if the generator changed (`python tools\make_icons.py`)
-- [ ] Installed from the built archive on a clean-ish machine, not just
-      registered from `bin\Release`
-- [ ] Exported an assembly with a component override and confirmed the colours
-- [ ] Uninstall.bat leaves no registry keys behind
+- [ ] The version in the csproj is correct
+- [ ] The CHANGELOG entry is written
+- [ ] You installed from the built archive, not only from `bin\Release`
+- [ ] You exported an assembly with a component override and checked the colours
+- [ ] Uninstall.bat left no registry keys
 
 ## If a release is wrong
 
-Do not move a tag that has been pushed — anyone who already fetched it keeps
-the old commit and the two silently disagree. Bump the PATCH version and
-release again. Delete the bad GitHub release if it is misleading, but leave
-the tag.
+Do not move a tag after you push it. Anyone who already fetched the tag keeps
+the old commit, and the two then disagree with no message. Change the PATCH
+number and release again. You can delete the wrong GitHub release, but leave the
+tag.

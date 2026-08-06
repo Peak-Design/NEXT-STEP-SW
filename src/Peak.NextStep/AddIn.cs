@@ -20,23 +20,24 @@ namespace Peak.NextStep
         public const string AddInTitle = "NEXT-STEP";
 
         /// <summary>
-        /// Taken from the assembly rather than written twice: the csproj
-        /// &lt;Version&gt; is the single source, so a release cannot ship a
-        /// binary whose registry entry claims a different version.
+        /// This code reads the version from the assembly. Nobody writes it
+        /// twice. The csproj &lt;Version&gt; is the one source. A release
+        /// therefore cannot ship a binary whose registry entry claims a
+        /// different version.
         /// </summary>
         public static string AddInVersion =>
             "v" + (typeof(AddIn).Assembly.GetName().Version?.ToString(3) ?? "0.0.0");
 
         /// <summary>
-        /// Titles this add-in has shipped under. The command tab is looked up
-        /// by title, so a rename orphans the old tab -- it stays in the user's
-        /// SolidWorks layout forever with a dead button on it. These are swept
-        /// on every connect.
+        /// The titles that this add-in has used before. SolidWorks finds a
+        /// command tab by its title. A new title therefore abandons the old tab,
+        /// which stays in the SolidWorks layout of the user with a dead button
+        /// on it. This code removes those tabs at every connect.
         /// </summary>
         private static readonly string[] RetiredTitles = { "Peak NEXT-STEP" };
 
         public const string AddInDescription =
-            "STEP export that preserves the SolidWorks appearance hierarchy, "
+            "STEP export that keeps the SolidWorks appearance hierarchy, "
             + "including component and assembly level overrides.";
 
         public static ISldWorks SwApp { get; private set; }
@@ -45,17 +46,17 @@ namespace Peak.NextStep
         private ICommandManager _cmdMgr;
         private CommandCallbacks _callbacks;
 
-        /// <summary>CommandGroup UserID -- persisted in the SW registry along with
-        /// the user's toolbar customisation, so it must never change.</summary>
+        /// <summary>The CommandGroup UserID. SolidWorks keeps it in the registry
+        /// with the toolbar layout of the user, so it must never change.</summary>
         private const int MainCmdGroupId = 71;
         private const int CmdExportUserId = 0;
 
         // ── Cross-version interop resolver ──────────────────────────────────
-        // Compiled against SW2022 interops (v30). When loaded by a newer
-        // SolidWorks the CLR cannot find that exact assembly version, so
-        // redirect to whichever interops ship with the running installation.
-        // This is a fallback only: the Private=True copies beside the DLL are
-        // what actually satisfy the bind that happens as AddIn itself loads.
+        // This add-in compiles against the SW2022 interops (v30). A newer
+        // SolidWorks loads it, and the CLR then cannot find that exact assembly
+        // version. This handler points at the interops of the SolidWorks that
+        // is running. It is only a fallback. The Private=True copies next to the
+        // DLL satisfy the bind that happens while the AddIn type itself loads.
         static AddIn()
         {
             AppDomain.CurrentDomain.AssemblyResolve += (sender, args) =>
@@ -78,15 +79,18 @@ namespace Peak.NextStep
         // ── Registration ────────────────────────────────────────────────────
 
         /// <summary>
-        /// The installed SolidWorks version keys under HKLM\SOFTWARE\SolidWorks.
+        /// The keys of the installed SolidWorks versions, under
+        /// HKLM\SOFTWARE\SolidWorks.
         ///
-        /// Two traps, both found the hard way on this machine:
-        ///   * the casing is NOT consistent -- 2022/2024/2025 are "SOLIDWORKS
-        ///     &lt;year&gt;" but 2026 is "SolidWorks 2026", so a case-sensitive
-        ///     StartsWith silently skips it and the add-in never appears;
+        /// This machine showed two traps:
+        ///   * The case is NOT consistent. 2022, 2024 and 2025 use "SOLIDWORKS
+        ///     &lt;year&gt;", but 2026 uses "SolidWorks 2026". A case sensitive
+        ///     StartsWith skips 2026 without a message, and the add-in never
+        ///     appears.
         ///   * "SOLIDWORKS CAM" also starts with "SOLIDWORKS " and is not a
-        ///     SolidWorks version, so a loose filter registers into it.
-        /// Requiring a 4-digit year after the prefix fixes both.
+        ///     SolidWorks version. A loose filter registers the add-in into it.
+        ///
+        /// A 4-digit year after the prefix prevents both faults.
         /// </summary>
         private static IEnumerable<string> InstalledVersionKeys(RegistryKey swKey)
         {
@@ -127,10 +131,10 @@ namespace Peak.NextStep
             using (var swKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\SolidWorks"))
             {
                 if (swKey == null) return;
-                // Unregister sweeps every key that starts with the prefix, not
-                // just the year-shaped ones, so a stray key written by an
-                // earlier looser filter (e.g. under "SOLIDWORKS CAM") is
-                // cleaned up rather than orphaned.
+                // Unregister removes every key that starts with the prefix, not
+                // only the keys with a year. An earlier and looser filter could
+                // have written a key in the wrong place, such as under
+                // "SOLIDWORKS CAM". This removes that key instead of leaving it.
                 foreach (var ver in swKey.GetSubKeyNames()
                              .Where(n => n.StartsWith("SOLIDWORKS ", StringComparison.OrdinalIgnoreCase)))
                     Registry.LocalMachine.DeleteSubKey(
@@ -184,9 +188,9 @@ namespace Peak.NextStep
         {
             int errors = 0;
 
-            // Only discard the user's saved toolbar layout when our command set
-            // has actually changed. Passing ignorePrevious:true unconditionally
-            // throws away their customisation on every load.
+            // Discard the saved toolbar layout of the user only when the command
+            // set changes. A value of ignorePrevious:true on every load throws
+            // away the layout each time.
             object registryIds;
             bool hadPrevious = _cmdMgr.GetGroupDataFromRegistry(MainCmdGroupId, out registryIds);
             var knownIds = new[] { CmdExportUserId };
@@ -200,7 +204,7 @@ namespace Peak.NextStep
 
             group.AddCommandItem2(
                 "Export STEP+", -1,
-                "Export STEP preserving the full appearance hierarchy",
+                "Export STEP and keep the full appearance hierarchy",
                 "Export STEP+", 0,
                 nameof(CommandCallbacks.ExportStep),
                 nameof(CommandCallbacks.EnableExportStep),
@@ -211,14 +215,14 @@ namespace Peak.NextStep
             group.HasMenu = true;
             group.Activate();
 
-            // Show for parts and assemblies, in the modelling document types.
+            // Show the tab for parts and for assemblies.
             //
-            // The tab persists across sessions, so an unconditional
-            // AddCommandTabBox()+AddCommands() appends ANOTHER copy of the
-            // button on every SolidWorks launch. Remove any existing tab of
-            // ours first and rebuild it from scratch -- this is the pattern
-            // SolidWorks' own samples use, because there is no reliable way to
-            // ask a tab box whether it already holds a given command.
+            // SolidWorks keeps the tab between sessions. A call to
+            // AddCommandTabBox() and AddCommands() on every launch therefore
+            // adds ANOTHER copy of the button each time. This code removes the
+            // existing tab first and builds it again. The SolidWorks samples use
+            // the same method, because no reliable call asks a tab box whether
+            // it already holds a command.
             foreach (var docType in new[] { swDocumentTypes_e.swDocPART, swDocumentTypes_e.swDocASSEMBLY })
             {
                 foreach (var title in new[] { AddInTitle }.Concat(RetiredTitles))
@@ -240,21 +244,21 @@ namespace Peak.NextStep
             }
         }
 
-        /// <summary>Icon sizes SolidWorks asks for, smallest first.</summary>
+        /// <summary>The icon sizes that SolidWorks asks for, smallest first.</summary>
         private static readonly int[] IconSizes = { 20, 32, 40, 64, 96, 128 };
 
         /// <summary>
-        /// Point the command group at the PNG icon set shipped beside the DLL.
+        /// Points the command group at the PNG icons next to the DLL.
         ///
-        /// SolidWorks takes ABSOLUTE paths and reads the files lazily, so a
-        /// missing file produces no error, no icon and no clue why. Every path
-        /// is checked here instead, and a missing set is logged and skipped so
-        /// the button still appears with SolidWorks' default artwork rather
-        /// than the add-in failing to load.
+        /// SolidWorks takes ABSOLUTE paths and reads the files only when it
+        /// needs them. A missing file therefore gives no error, no icon and no
+        /// explanation. This code examines every path first. If a file is
+        /// missing, it writes a log entry and continues. The button then keeps
+        /// the default SolidWorks artwork, and the add-in still loads.
         ///
-        /// IconList is the strip of command icons -- one square per command,
-        /// side by side -- and MainIconList is the group's own icon. With a
-        /// single command both are plain squares.
+        /// IconList is the strip of command icons. It holds one square for each
+        /// command, side by side. MainIconList is the icon of the group itself.
+        /// With one command, both files are single squares.
         /// </summary>
         private void ApplyIcons(ICommandGroup group)
         {
@@ -293,20 +297,21 @@ namespace Peak.NextStep
             try
             {
                 string dir = Path.GetDirectoryName(typeof(AddIn).Assembly.Location) ?? ".";
-                // Fully qualified: SolidWorks.Interop.sldworks also defines
-                // an Environment type, so the bare name is ambiguous here.
+                // The name needs its namespace. SolidWorks.Interop.sldworks
+                // also declares an Environment type, so the short name is
+                // ambiguous here.
                 File.AppendAllText(Path.Combine(dir, "nextstep-debug.log"),
                     DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss ") + message
                     + System.Environment.NewLine);
             }
-            catch { /* logging must never break the add-in */ }
+            catch { /* a log failure must never stop the add-in */ }
         }
     }
 
     /// <summary>
-    /// SolidWorks dispatches ribbon callbacks late-bound by method name. AddIn
-    /// itself is ClassInterface(None) so only ISwAddin is dispatchable; this
-    /// separate AutoDispatch object receives the callbacks.
+    /// SolidWorks sends the ribbon callbacks by method name, through late
+    /// binding. AddIn uses ClassInterface(None), so it exposes only ISwAddin.
+    /// This separate AutoDispatch object receives the callbacks.
     /// </summary>
     [ComVisible(true)]
     [ClassInterface(ClassInterfaceType.AutoDispatch)]
@@ -316,7 +321,7 @@ namespace Peak.NextStep
 
         public void ExportStep() => ExportCommand.Run(AddIn.SwApp);
 
-        /// <summary>1 = enabled, 0 = greyed out.</summary>
+        /// <summary>1 enables the button. 0 makes it grey.</summary>
         public int EnableExportStep()
         {
             var doc = AddIn.SwApp?.ActiveDoc as IModelDoc2;

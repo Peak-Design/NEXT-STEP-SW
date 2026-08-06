@@ -11,7 +11,8 @@ namespace Peak.NextStep.Core
         public double R, G, B;
         public Rgb(double r, double g, double b) { R = r; G = g; B = b; }
 
-        /// <summary>SolidWorks packs appearance colour as COLORREF 0x00BBGGRR.</summary>
+        /// <summary>SolidWorks stores an appearance colour as a COLORREF, in
+        /// the form 0x00BBGGRR.</summary>
         public static Rgb FromColorRef(int c)
             => new Rgb((c & 0xFF) / 255.0, ((c >> 8) & 0xFF) / 255.0, ((c >> 16) & 0xFF) / 255.0);
 
@@ -24,52 +25,58 @@ namespace Peak.NextStep.Core
     /// <summary>The appearance that applies to one component occurrence.</summary>
     public sealed class OccurrenceAppearance
     {
-        /// <summary>Component path, e.g. "sub-1/part-2" -- unique per occurrence.</summary>
+        /// <summary>The component path, such as "sub-1/part-2". Each occurrence
+        /// has its own path.</summary>
         public string Path;
         public string ComponentName;
         public string ReferencedConfiguration;
         public Rgb Colour;
         public double Transparency;
-        /// <summary>Which scope supplied the winning colour, for diagnostics.</summary>
+        /// <summary>The scope that gave the winning colour. This is for
+        /// diagnosis.</summary>
         public string WinningScope;
-        /// <summary>True when the winner came from above the part, so it must
-        /// override the part's own face/body/feature styling in the STEP.</summary>
+        /// <summary>True when the winning colour comes from above the part. The
+        /// colour must then override the face, body and feature styling of the
+        /// part in the STEP file.</summary>
         public bool OverridesPartInternals;
         /// <summary>
-        /// False when SolidWorks will not write this occurrence at all --
-        /// hidden or suppressed. Measured, not assumed: a silent SaveAs3 omits
-        /// both (evidence/S8/hidden.log). Such a component has no occurrence to
-        /// match, so reporting it as unmatched would be a false alarm.
+        /// False when SolidWorks does not write this occurrence at all, because
+        /// it is hidden or suppressed. This was measured, not assumed. A silent
+        /// SaveAs3 leaves out both kinds. See evidence/S8/hidden.log. Such a
+        /// component has no occurrence to match, so a report of no match would
+        /// be a false alarm.
         /// </summary>
         public bool Exported = true;
-        /// <summary>hidden | suppressed, when Exported is false.</summary>
+        /// <summary>Holds "hidden" or "suppressed" when Exported is
+        /// false.</summary>
         public string ExcludedBecause;
     }
 
     /// <summary>
-    /// Resolves the appearance SolidWorks actually displays for each component
+    /// Resolves the appearance that SolidWorks displays for each component
     /// occurrence.
     ///
-    /// The rule (stated by the maintainer, corroborated by
-    /// corpus/C4_component_override_2.JPG where a top-level green override beats
-    /// two component-level overrides, and by C2_stacked_overrides.jpg):
+    /// The maintainer stated the rule. Two corpus images confirm it.
+    /// corpus/C4_component_override_2.JPG shows a green override at the top
+    /// level that beats two overrides at component level.
+    /// C2_stacked_overrides.jpg shows the second half of the rule.
     ///
     ///   ACROSS documents, the HIGHEST level wins:
     ///     top assembly > sub-assembly override > sub-assembly >
     ///     part override (component level) > part
-    ///   WITHIN one part, the MOST SPECIFIC wins:
+    ///   WITHIN one part, the MOST EXACT scope wins:
     ///     face > feature > body > part
     ///
-    /// Note this is NOT what IComponent2.MaterialPropertyValues returns: that
-    /// call ignores overrides applied above the component, and reports orange
-    /// and yellow for C4_component_override_2 where SolidWorks displays green.
-    /// The ladder therefore has to be walked explicitly.
+    /// IComponent2.MaterialPropertyValues does NOT return this result. That call
+    /// ignores an override above the component. For C4_component_override_2 it
+    /// reports orange and yellow, and SolidWorks displays green. This code must
+    /// therefore walk the hierarchy itself.
     /// </summary>
     public static class AppearanceLadder
     {
         /// <summary>
-        /// An appearance harvested from the model, tagged with the scope it was
-        /// applied at and the entities it covers.
+        /// One appearance read from the model, with the scope that it was
+        /// applied at and the entities that it covers.
         /// </summary>
         private sealed class ScopedAppearance
         {
@@ -93,9 +100,9 @@ namespace Peak.NextStep.Core
 
             if (!(model is IAssemblyDoc assy))
             {
-                // A part on its own: no occurrences to resolve. The part's own
-                // face/feature/body/part styling is already correct in
-                // SolidWorks' STEP output (S0 section 2.2), so nothing to do.
+                // A part on its own has no occurrences to resolve. The STEP
+                // output of SolidWorks already holds the face, feature, body and
+                // part styling correctly. See S0 section 2.2.
                 return results;
             }
 
@@ -117,7 +124,7 @@ namespace Peak.NextStep.Core
 
                 if (topOverride != null)
                 {
-                    // Highest level wins, for every occurrence beneath it.
+                    // The highest level wins, for every occurrence below it.
                     occ.Colour = topOverride.Colour;
                     occ.Transparency = topOverride.Transparency;
                     occ.WinningScope = "assembly";
@@ -136,9 +143,10 @@ namespace Peak.NextStep.Core
                     }
                     else
                     {
-                        // Nothing above the part applies: SolidWorks' own export
-                        // already carries the part's internal styling correctly,
-                        // so record it but mark it as needing no intervention.
+                        // Nothing above the part applies. The SolidWorks export
+                        // already carries the internal styling of the part
+                        // correctly. Record the colour, but mark it as needing
+                        // no repair.
                         var vals = comp.MaterialPropertyValues as double[];
                         if (vals != null && vals.Length >= 3 && vals[0] >= 0)
                         {
@@ -160,15 +168,15 @@ namespace Peak.NextStep.Core
         }
 
         /// <summary>
-        /// Why SolidWorks will leave this component out of the STEP file, or
-        /// null if it will be written.
+        /// The reason that SolidWorks leaves this component out of the STEP
+        /// file. Returns null when SolidWorks writes the component.
         ///
-        /// Both cases were measured rather than assumed: a silent SaveAs3 drops
-        /// hidden components as well as suppressed ones, on every corpus
-        /// assembly and with swStepExportAppearances both on and off
-        /// (evidence/S8/hidden.log). There is no preference behind this --
-        /// SolidWorks prompts about it interactively and
-        /// swSaveAsOptions_Silent answers the prompt for us.
+        /// Both cases were measured, not assumed. A silent SaveAs3 drops the
+        /// hidden components as well as the suppressed ones. This holds for
+        /// every corpus assembly, and with swStepExportAppearances both on and
+        /// off. See evidence/S8/hidden.log. No preference controls this.
+        /// SolidWorks asks the user, and swSaveAsOptions_Silent answers the
+        /// question.
         /// </summary>
         public static string ExclusionReason(IComponent2 comp)
         {
@@ -223,8 +231,8 @@ namespace Peak.NextStep.Core
                     else if (e is IPartDoc) sa.Scope = Weakest(sa.Scope, "part");
                     else if (e is IModelDoc2)
                     {
-                        // An appearance whose entity is the document itself is the
-                        // assembly-level override -- the one that beats everything.
+                        // An appearance whose entity is the document itself is
+                        // the override at assembly level. It beats everything.
                         sa.Scope = "assembly";
                         sa.CoversWholeDocument = true;
                     }
@@ -237,8 +245,8 @@ namespace Peak.NextStep.Core
             return outList;
         }
 
-        // "component" and "assembly" are decided by entity identity, never
-        // downgraded by a later entity in the same appearance.
+        // The entity itself decides the scopes "component" and "assembly". A
+        // later entity in the same appearance never lowers them.
         private static string Weakest(string current, string candidate)
             => (current == "component" || current == "assembly") ? current : candidate;
 

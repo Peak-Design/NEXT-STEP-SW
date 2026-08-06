@@ -6,16 +6,16 @@ using System.Linq;
 namespace Peak.NextStep.Core
 {
     /// <summary>
-    /// Attaches per-occurrence appearance to SolidWorks' own STEP output.
+    /// Adds the appearance of each occurrence to the STEP output of SolidWorks.
     ///
-    /// SolidWorks writes one shared shape representation for a part used twice,
-    /// with a single styled_item on it, so both occurrences necessarily render
-    /// the same colour (S0 section 2.3). This adds a
-    /// CONTEXT_DEPENDENT_OVER_RIDING_STYLED_ITEM per occurrence, bound to that
-    /// occurrence's NEXT_ASSEMBLY_USAGE_OCCURRENCE -- the entity ISO 10303-46
-    /// defines for exactly this, which SolidWorks never emits.
+    /// For a part used twice, SolidWorks writes one shared shape representation
+    /// with one styled_item on it. Both occurrences must therefore show the same
+    /// colour. See S0 section 2.3. This class adds one
+    /// CONTEXT_DEPENDENT_OVER_RIDING_STYLED_ITEM for each occurrence, tied to
+    /// the NEXT_ASSEMBLY_USAGE_OCCURRENCE of that occurrence. ISO 10303-46
+    /// defines this entity for this purpose, and SolidWorks never writes it.
     ///
-    /// Geometry is never touched.
+    /// This class does not change geometry.
     /// </summary>
     public sealed class StepRewriter
     {
@@ -29,33 +29,34 @@ namespace Peak.NextStep.Core
         }
 
         /// <summary>
-        /// Which appearance bucket each product in the file ended up carrying,
-        /// numbered per part: 0 is the bucket that kept the shared geometry,
-        /// 1 and up are the copies.
+        /// The appearance group that each product in the file carries. The
+        /// numbers start again for each part. Group 0 keeps the shared geometry.
+        /// Groups 1 and above are the copies.
         ///
-        /// This exists so engineering material can be named per bucket. STEP
-        /// itself has no link between material and appearance -- see
-        /// MaterialWriter -- but a consumer that creates one material per
-        /// material NAME will create one per bucket if the names differ, and
-        /// each takes the colour of the product it first met.
+        /// This map lets MaterialWriter give each group its own material name.
+        /// STEP has no link between a material and an appearance. See
+        /// MaterialWriter. But a consumer that builds one material for each
+        /// material NAME builds one for each group when the names differ. Each
+        /// material then takes the colour of the first product that uses it.
         /// </summary>
         public Dictionary<int, int> BucketIndexByProduct { get; } = new Dictionary<int, int>();
 
         public sealed class OccurrenceRef
         {
             public int NauoId;
-            /// <summary>Translation of this occurrence, in file units.</summary>
+            /// <summary>The position of this occurrence, in file units.</summary>
             public double[] Translation;
-            /// <summary>The geometric item this occurrence's styling should target.</summary>
+            /// <summary>The geometric item that the styling of this occurrence
+            /// must point at.</summary>
             public int TargetItemId;
             public int BaseStyledItemId;
         }
 
         /// <summary>
-        /// Find every occurrence and its placement, by walking
-        /// CONTEXT_DEPENDENT_SHAPE_REPRESENTATION -> product_definition_shape ->
-        /// NAUO for identity, and -> item_defined_transformation ->
-        /// axis2_placement_3d -> cartesian_point for placement.
+        /// Finds every occurrence and its position. For the identity, this walks
+        /// CONTEXT_DEPENDENT_SHAPE_REPRESENTATION to product_definition_shape to
+        /// NAUO. For the position, it walks item_defined_transformation to
+        /// axis2_placement_3d to cartesian_point.
         /// </summary>
         public List<OccurrenceRef> FindOccurrences()
         {
@@ -79,8 +80,8 @@ namespace Peak.NextStep.Core
 
                 double[] xyz = ReadOccurrencePlacement(cdsr);
 
-                // Target the solid the assembly shares; fall back to the shape
-                // representation when there is no explicit solid styled item.
+                // Point at the solid that the assembly shares. If no styled
+                // item names a solid, use the shape representation.
                 int target = styledByItem.Keys.FirstOrDefault(
                     k => _step.TypeOf(k) == "MANIFOLD_SOLID_BREP");
                 if (target == 0)
@@ -100,15 +101,17 @@ namespace Peak.NextStep.Core
         }
 
         /// <summary>
-        /// Read where this occurrence sits in the assembly.
+        /// Reads the position of this occurrence in the assembly.
         ///
-        /// The chain is explicit and must not be searched breadth-first:
+        /// This code follows an exact chain. A breadth-first search does not
+        /// work here:
         ///     CDSR -> (representation_relationship_with_transformation)
         ///          -> ITEM_DEFINED_TRANSFORMATION(name, desc, item_1, item_2)
-        /// where item_1 is the placement in ASSEMBLY space (what identifies the
-        /// occurrence) and item_2 is the part's own origin placement, which is
-        /// SHARED by every occurrence. A breadth-first search finds item_2's
-        /// point just as readily and reports every occurrence at the origin.
+        /// Here item_1 is the position in ASSEMBLY space, which identifies the
+        /// occurrence. item_2 is the origin of the part itself, and every
+        /// occurrence SHARES it. A breadth-first search finds the point of
+        /// item_2 just as easily, and then reports every occurrence at the
+        /// origin.
         /// </summary>
         private double[] ReadOccurrencePlacement(int cdsr)
         {
@@ -144,7 +147,7 @@ namespace Peak.NextStep.Core
             return null;
         }
 
-        /// <summary>Breadth-first search for the nearest entity of a given type.</summary>
+        /// <summary>Breadth-first search for the nearest entity of a type.</summary>
         private int FindReachable(int start, string type, int maxDepth)
         {
             var seen = new HashSet<int> { start };
@@ -179,7 +182,8 @@ namespace Peak.NextStep.Core
         }
 
         /// <summary>
-        /// Write one occurrence's colour. Returns the id of the new styled item.
+        /// Writes the colour of one occurrence. Returns the id of the new styled
+        /// item.
         /// </summary>
         public int AddOccurrenceColour(OccurrenceRef occ, Rgb colour, double transparency)
         {
@@ -231,20 +235,19 @@ namespace Peak.NextStep.Core
         }
 
         /// <summary>
-        /// Apply the resolved appearance to every matched occurrence.
+        /// Applies the resolved appearance to every matched occurrence.
         ///
-        /// deInstance=false keeps SolidWorks' instancing and writes
-        /// CONTEXT_DEPENDENT_OVER_RIDING_STYLED_ITEM -- compact and correct per
-        /// ISO 10303-46, but measured to be ignored by Fusion 360 and STEPper
-        /// NEXT (FINDINGS.md 4.3).
+        /// deInstance=false keeps the instancing of SolidWorks and writes
+        /// CONTEXT_DEPENDENT_OVER_RIDING_STYLED_ITEM. That output is compact and
+        /// correct under ISO 10303-46. But Fusion 360 and STEPper NEXT ignore it.
+        /// This was measured. See FINDINGS.md 4.3.
         ///
-        /// deInstance=true separates occurrences by APPEARANCE, not by
-        /// occurrence: for each part, occurrences are bucketed by the colour
-        /// they resolved to and each bucket gets one copy carrying a plain
-        /// STYLED_ITEM, which every consumer reads. Two occurrences of a part
-        /// that ended up the same colour therefore stay real instances of one
-        /// product -- only genuinely different-looking occurrences cost extra
-        /// geometry.
+        /// deInstance=true separates the occurrences by APPEARANCE, not one by
+        /// one. For each part, this code groups the occurrences by the colour
+        /// they resolved to. Each group gets one copy with a plain STYLED_ITEM,
+        /// which every consumer reads. Two occurrences of a part with the same
+        /// colour therefore stay true instances of one product. Only occurrences
+        /// that look different cost extra geometry.
         /// </summary>
         public int ApplyOccurrenceColours(
             List<KeyValuePair<OccurrenceAppearance, OccurrenceRef>> pairs, bool deInstance)
@@ -267,12 +270,12 @@ namespace Peak.NextStep.Core
 
             foreach (var partGroup in matched.GroupBy(p => PartProductOf(p.Value.NauoId)))
             {
-                // Occurrences carrying no override must keep the part exactly
-                // as SolidWorks wrote it -- including per-face colours. If any
-                // exist, the shared geometry belongs to them and EVERY
-                // overridden bucket has to be a copy. Recolouring the shared
-                // geometry in that case would repaint occurrences that were
-                // never overridden.
+                // An occurrence with no override must keep the part exactly as
+                // SolidWorks wrote it, including the colour of each face. If any
+                // such occurrence exists, the shared geometry belongs to it, and
+                // EVERY overridden group must be a copy. To recolour the shared
+                // geometry would then repaint occurrences that have no
+                // override.
                 bool sharedGeometryTaken = partGroup.Any(p => !p.Key.OverridesPartInternals);
 
                 var buckets = partGroup
@@ -297,10 +300,11 @@ namespace Peak.NextStep.Core
                         int repointed = di.RecolourPart(lead.Value, lead.Key.Colour, lead.Key.Transparency);
                         if (repointed == 0 && lead.Value.TargetItemId > 0)
                             di.AddPlainStyle(lead.Value.TargetItemId, lead.Key.Colour, lead.Key.Transparency);
-                        // The shared geometry is bucket 0, registered above.
-                        // It still consumes an index: the next bucket is a copy
-                        // and must be numbered 1, not 0, or its material name
-                        // collides with this one and the two merge again.
+                        // The shared geometry is group 0, recorded above. It
+                        // still uses an index. The next group is a copy and must
+                        // have the number 1, not 0. With the number 0 its
+                        // material name matches this one, and a reader merges
+                        // the two groups again.
                         bucketIndex++;
 
                         _log?.Invoke($"    {who}: {n} occurrence(s) keep the shared geometry, " +
@@ -338,9 +342,9 @@ namespace Peak.NextStep.Core
         }
 
         /// <summary>
-        /// What makes two occurrences interchangeable. Quantised, because
-        /// colours that arrive from different SolidWorks scopes can differ in
-        /// the last bit of a double and must still bucket together.
+        /// The key that makes two occurrences equal. The numbers are rounded.
+        /// Colours from different SolidWorks scopes can differ in the last bit
+        /// of a double, and they must still fall in the same group.
         /// </summary>
         private static string AppearanceKey(OccurrenceAppearance a)
             => string.Format(CultureInfo.InvariantCulture, "{0:F3}/{1:F3}/{2:F3}/{3:F3}",
@@ -354,7 +358,7 @@ namespace Peak.NextStep.Core
             return -1;
         }
 
-        /// <summary>PRODUCT_DEFINITION -&gt; formation -&gt; PRODUCT.</summary>
+        /// <summary>Walks PRODUCT_DEFINITION to formation to PRODUCT.</summary>
         private int ProductOf(int productDefinition)
         {
             if (productDefinition <= 0) return -1;

@@ -10,15 +10,17 @@ using System.Windows.Forms;
 namespace Peak.NextStep
 {
     /// <summary>
-    /// The export command: SolidWorks writes the STEP it is good at, then we
-    /// add the appearance it loses.
+    /// The export command. SolidWorks writes the STEP file it is good at. This
+    /// class then adds the appearance that SolidWorks loses.
     ///
-    /// SolidWorks exports per-face and per-body colour correctly (measured --
-    /// see FINDINGS.md section 2.2), so that styling is left untouched. What it
-    /// flattens is component- and assembly-level overrides: every occurrence of
-    /// a shared part is written against one shape representation carrying one
-    /// styled item, so all but one occurrence come out the wrong colour. That
-    /// is what this repairs.
+    /// SolidWorks exports the colour of each face and each body correctly. This
+    /// was measured. See FINDINGS.md section 2.2. This class therefore does not
+    /// change that styling.
+    ///
+    /// SolidWorks flattens the overrides at component and assembly level. It
+    /// writes every occurrence of a shared part against one shape representation
+    /// that holds one styled item. All the occurrences except one then get the
+    /// wrong colour. This class repairs that.
     /// </summary>
     public static class ExportCommand
     {
@@ -79,10 +81,10 @@ namespace Peak.NextStep
                                     bool deInstance, bool includeMaterial,
                                     bool includeHidden = false)
         {
-            // ── 1. SolidWorks' own export ───────────────────────────────────
-            // These are application-wide preferences, so they are saved and
-            // restored around the export -- the user's own settings must
-            // survive an export run.
+            // ── 1. The SolidWorks export ────────────────────────────────────
+            // These preferences apply to the whole application. This code saves
+            // them before the export and puts them back afterwards. The
+            // settings of the user must survive an export.
             int savedAp = app.GetUserPreferenceIntegerValue((int)swUserPreferenceIntegerValue_e.swStepAP);
             bool savedAppearances = false, appearancesAvailable = true;
             try { savedAppearances = app.GetUserPreferenceToggle(StepPrefs.ExportAppearances); }
@@ -125,15 +127,16 @@ namespace Peak.NextStep
             var notes = new List<string>();
             int applied = 0, unmatched = 0;
 
-            // Occurrence appearance only applies to assemblies: a part's own
-            // face/body/feature styling is already written correctly.
+            // Occurrence appearance applies only to assemblies. SolidWorks
+            // already writes the face, body and feature styling of a part
+            // correctly.
             if (model is IAssemblyDoc)
             {
                 var occurrences = AppearanceLadder.Resolve(model, AddIn.Log);
 
-                // Anything revealed for the export was written, so it must be
-                // treated as present when matching -- the ladder ran after the
-                // components were hidden again.
+                // SolidWorks wrote every component that this code revealed, so
+                // the matcher must treat those components as present. The ladder
+                // runs after the code hides them again.
                 if (includeHidden)
                     foreach (var o in occurrences)
                         if (o.ExcludedBecause == "hidden") { o.Exported = true; o.ExcludedBecause = null; }
@@ -145,8 +148,9 @@ namespace Peak.NextStep
                 int needFixing = occurrences.Count(o => o.OverridesPartInternals);
                 if (needFixing == 0)
                 {
-                    notes.Add($"{occurrences.Count} component(s), none carrying a component "
-                            + "or assembly level override, so appearance needed no repair.");
+                    notes.Add($"{occurrences.Count} component(s). None of them carries a "
+                            + "component or assembly level override, so the appearance "
+                            + "needed no repair.");
                 }
                 else
                 {
@@ -154,15 +158,15 @@ namespace Peak.NextStep
                         .Match(occurrences, rw.FindOccurrences());
                     unmatched = pairs.Count(p => p.Key.OverridesPartInternals && p.Value == null);
                     applied = rw.ApplyOccurrenceColours(pairs, deInstance);
-                    notes.Add($"{occurrences.Count} component(s); {applied} occurrence "
-                            + "appearance(s) restored that SolidWorks' own export drops "
-                            + (deInstance ? "(de-instanced)." : "(instancing preserved)."));
+                    notes.Add($"{occurrences.Count} component(s). Put back {applied} "
+                            + "occurrence appearance(s) that the SolidWorks export drops "
+                            + (deInstance ? "(de-instanced)." : "(instancing kept)."));
                 }
             }
             else
             {
-                notes.Add("Part document: SolidWorks' own per-face appearance export is "
-                        + "already correct, so appearance needed no repair.");
+                notes.Add("This is a part document. SolidWorks already exports the colour "
+                        + "of each face correctly, so the appearance needed no repair.");
             }
 
             // ── 3. Engineering material, which SolidWorks never exports ─────
@@ -170,46 +174,46 @@ namespace Peak.NextStep
             {
                 var materials = MaterialHarvester.Harvest(model, AddIn.Log);
 
-                // With de-instancing on, each appearance bucket gets its own
-                // numbered variant of the material name. STEP cannot associate
-                // a material with an appearance, so a consumer that builds one
-                // material per material name would otherwise merge every
-                // differently-coloured copy of a part back into one and lose
-                // the colours. Instancing preserved means one product per part
-                // and nothing to distinguish, so the names stay untouched.
+                // With de-instancing on, each appearance group gets its own
+                // numbered variant of the material name. STEP cannot relate a
+                // material to an appearance. A consumer that builds one material
+                // for each material name would otherwise merge every copy of a
+                // part into one material and lose the colours. With instancing
+                // kept there is one product for each part and nothing to tell
+                // apart, so the names do not change.
                 int withMaterial = new MaterialWriter(rw.Document, AddIn.Log)
                     .Apply(materials, deInstance ? rw.BucketIndexByProduct : null);
 
                 notes.Add(withMaterial > 0
-                    ? $"Engineering material written for {withMaterial} part(s)."
-                    : "No engineering material assigned, so none was written.");
+                    ? $"Wrote the engineering material for {withMaterial} part(s)."
+                    : "No part has an engineering material, so none was written.");
             }
 
             rw.Save(target);
 
             string msg = $"Exported {Path.GetFileName(target)}.\n\n" + string.Join("\n", notes);
             if (unmatched > 0)
-                msg += $"\n\nWARNING: {unmatched} occurrence(s) could not be matched to the "
-                     + "STEP file and kept SolidWorks' colour. See nextstep-debug.log.";
+                msg += $"\n\nWARNING: {unmatched} occurrence(s) do not match the STEP file. "
+                     + "They keep the SolidWorks colour. See nextstep-debug.log.";
             return msg;
         }
 
         /// <summary>
-        /// Make hidden components visible for the duration of the export, and
-        /// return the ones changed so they can be hidden again.
+        /// Shows the hidden components for the export, and returns the ones it
+        /// changed so that the caller can hide them again.
         ///
-        /// SolidWorks omits hidden components from a silent SaveAs3 and offers
-        /// no preference to change that -- the STEP options page lists every
-        /// setting the API exposes and this is not among them. It asks
-        /// interactively instead, and swSaveAsOptions_Silent answers the
-        /// prompt. Toggling visibility is how the answer gets given.
+        /// A silent SaveAs3 leaves out the hidden components, and the API has no
+        /// preference to change this. The STEP options page lists every setting
+        /// the API gives, and this is not one of them. SolidWorks asks the user
+        /// instead, and swSaveAsOptions_Silent answers the question. A change of
+        /// visibility is how this code gives a different answer.
         ///
-        /// Visibility is chosen over suppression deliberately. Resolving a
-        /// suppressed component rebuilds the assembly and can disturb mates and
-        /// in-context features; showing a hidden one is a display change that
-        /// costs nothing and reverses exactly. Suppressed components are
-        /// therefore never exported, which is stated in the dialog rather than
-        /// worked around.
+        /// This code changes visibility, not suppression, on purpose. To resolve
+        /// a suppressed component, SolidWorks rebuilds the assembly, which can
+        /// disturb mates and in-context features. To show a hidden component
+        /// changes only the display, and reverses exactly. NEXT-STEP therefore
+        /// never exports suppressed components. The dialog says so, instead of
+        /// working around it.
         /// </summary>
         private static List<IComponent2> RevealHidden(IModelDoc2 model)
         {
@@ -222,8 +226,8 @@ namespace Peak.NextStep
                 if (comp == null) continue;
                 try
                 {
-                    // Suppressed components have no geometry to write, so
-                    // revealing them achieves nothing.
+                    // A suppressed component has no geometry to write, so to
+                    // show it achieves nothing.
                     if (comp.GetSuppression2() == (int)swComponentSuppressionState_e.swComponentSuppressed)
                         continue;
                     if (comp.Visible != (int)swComponentVisibilityState_e.swComponentHidden)
@@ -241,9 +245,9 @@ namespace Peak.NextStep
         }
 
         /// <summary>
-        /// Put back every component RevealHidden changed. Runs in a finally:
-        /// leaving a user's assembly with components shown that they had
-        /// hidden would be a worse bug than anything this add-in fixes.
+        /// Hides every component that RevealHidden changed. This runs in a
+        /// finally block. To leave an assembly with components shown that the
+        /// user had hidden is a worse defect than any this add-in repairs.
         /// </summary>
         private static void Rehide(List<IComponent2> revealed)
         {
@@ -258,10 +262,10 @@ namespace Peak.NextStep
     internal static class StepPrefs
     {
         /// <summary>
-        /// swStepExportAppearances = 787. Present from SW2024's swconst and
-        /// ABSENT from SW2022's, which this add-in compiles against, so it is
-        /// used as a raw preference id. Reads are guarded: on SW2022 the
-        /// preference simply does not exist.
+        /// swStepExportAppearances = 787. The swconst of SW2024 has it. The
+        /// swconst of SW2022 does not, and this add-in compiles against SW2022.
+        /// This code therefore uses the raw preference id. Every read has a
+        /// guard, because on SW2022 the preference does not exist.
         /// </summary>
         public const int ExportAppearances = 787;
     }
