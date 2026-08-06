@@ -51,6 +51,6 @@ The first release.
 - Geometry is untouched. The geometry in the file is the SolidWorks geometry,
   byte for byte.
 - Textures, UVs, roughness and metallic values are not exported. STEP has no
-  entity for them. See FINDINGS.md §3.3.
+  entity for them.
 - AP242 is not used. Everything here works in AP214, which needs no extra
   licence.

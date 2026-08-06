@@ -7,8 +7,7 @@
   <strong>STEP export for SolidWorks that keeps your appearances.</strong><br>
   <a href="../../releases/latest">Download</a> ·
   <a href="#install">Install</a> ·
-  <a href="#what-it-fixes">What it fixes</a> ·
-  <a href="FINDINGS.md">How it was measured</a>
+  <a href="#what-it-fixes">What it fixes</a>
 </p>
 
 ---
@@ -83,7 +82,7 @@ name, so turn de-instancing off to keep the exact material names.
 
 - STEP cannot carry textures, UV mapping, roughness or metallic values. No
   entity for them exists in AP214 or AP242. A companion glTF file is the planned
-  answer. See [FINDINGS.md](FINDINGS.md) §3.3.
+  answer.
 - AP242 export through `PublishSTEP242File` needs a SolidWorks MBD licence, so
   NEXT-STEP does not use it. Everything here works in AP214, which needs no
   extra licence.
@@ -99,16 +98,8 @@ src\Peak.NextStep\Register-Addin.bat
 
 To make a release, see [RELEASING.md](RELEASING.md).
 
-## How this was measured
-
-[FINDINGS.md](FINDINGS.md) is the measurement record. It shows what SolidWorks
-writes entity by entity, what STEP and OCCT can carry, and what each consumer
-reads. It also records what was ruled out, and why. Every claim in it cites a
-file in `evidence/`. `PLAN.md` is the original study plan.
-
 ## Licence
 
 MIT. See [LICENSE](LICENSE). The MIT licence does not cover the SolidWorks
 interop assemblies, which are the property of Dassault Systèmes. See
-[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). That file also explains why a
-copyleft licence is a poor fit for a SolidWorks add-in.
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
