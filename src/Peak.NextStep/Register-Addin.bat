@@ -1,5 +1,5 @@
 @echo off
-REM Register (or unregister) the Peak NEXT-STEP add-in with every installed
+REM Register (or unregister) the NEXT-STEP add-in with every installed
 REM SolidWorks version. Needs administrator rights: the add-in registry keys
 REM live under HKLM\SOFTWARE\SolidWorks\<version>\Addins.
 REM
@@ -34,5 +34,5 @@ if /I "%~1"=="/u" (
 )
 
 echo.
-echo Done. Restart SolidWorks, then check Tools ^> Add-Ins for "Peak NEXT-STEP".
+echo Done. Restart SolidWorks, then check Tools ^> Add-Ins for "NEXT-STEP".
 pause

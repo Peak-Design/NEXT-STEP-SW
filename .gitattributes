@@ -1,2 +1,25 @@
-# Auto detect text files and perform LF normalization
+# Text files are normalised to LF in the repository and checked out native.
 * text=auto
+
+# Windows-only launchers must keep CRLF or cmd.exe mis-parses them.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Part 21 is a text format, but these files are byte-for-byte evidence:
+# normalising their line endings would change the bytes FINDINGS.md cites.
+*.step -text
+*.stp  -text
+*.STEP -text
+
+# Binary
+*.png binary
+*.jpg binary
+*.JPG binary
+*.glb binary
+*.dll binary
+*.SLDPRT binary
+*.SLDASM binary
+
+# Machine-generated: keep it out of diffs and language statistics.
+evidence/** linguist-generated=true

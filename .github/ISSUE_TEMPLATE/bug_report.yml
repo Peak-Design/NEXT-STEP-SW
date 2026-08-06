@@ -1,0 +1,70 @@
+name: Bug report
+description: Something exported wrong, or the add-in did not load
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Appearance bugs are hard to diagnose from a description alone. The
+        STEP file and the debug log together usually settle it in one round.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you expected to see, and what you saw instead.
+      placeholder: |
+        Two instances of the same part, overridden green and blue in SolidWorks.
+        Both came into Blender green.
+    validations:
+      required: true
+
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: NEXT-STEP version (Tools > Add-Ins) and SolidWorks version.
+      placeholder: "NEXT-STEP v0.1.0, SOLIDWORKS 2024 SP5"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: options
+    attributes:
+      label: Export options used
+      multiple: true
+      options:
+        - De-instance ON
+        - De-instance OFF
+        - Engineering material ON
+        - Engineering material OFF
+    validations:
+      required: true
+
+  - type: input
+    id: consumer
+    attributes:
+      label: What did you open the file in
+      placeholder: "Blender 4.2 with STEPper NEXT / Fusion 360 / Rhino 8 / KeyShot"
+    validations:
+      required: true
+
+  - type: textarea
+    id: log
+    attributes:
+      label: Debug log
+      description: |
+        `nextstep-debug.log`, next to the installed DLL (by default
+        `C:\Program Files\NEXT-STEP\`). It records the resolved appearance for
+        every component and what was written for each one, which is normally
+        enough to find the fault. Paste the section from the failing export.
+      render: text
+
+  - type: textarea
+    id: files
+    attributes:
+      label: Files
+      description: |
+        If you can share them, attach the exported `.step` and — ideally — the
+        assembly. A cut-down assembly that still shows the problem is worth
+        more than a large one that does.

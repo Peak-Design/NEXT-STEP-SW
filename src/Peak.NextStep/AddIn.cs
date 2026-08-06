@@ -18,7 +18,14 @@ namespace Peak.NextStep
     public class AddIn : ISwAddin
     {
         public const string AddInTitle = "NEXT-STEP";
-        public const string AddInVersion = "V0.1";
+
+        /// <summary>
+        /// Taken from the assembly rather than written twice: the csproj
+        /// &lt;Version&gt; is the single source, so a release cannot ship a
+        /// binary whose registry entry claims a different version.
+        /// </summary>
+        public static string AddInVersion =>
+            "v" + (typeof(AddIn).Assembly.GetName().Version?.ToString(3) ?? "0.0.0");
 
         /// <summary>
         /// Titles this add-in has shipped under. The command tab is looked up
@@ -189,6 +196,8 @@ namespace Peak.NextStep
                 MainCmdGroupId, AddInTitle, AddInDescription, "", -1, ignorePrevious, ref errors);
             if (group == null) { Log($"CreateCommandGroup2 failed ({errors})"); return; }
 
+            ApplyIcons(group);
+
             group.AddCommandItem2(
                 "Export STEP+", -1,
                 "Export STEP preserving the full appearance hierarchy",
@@ -229,6 +238,46 @@ namespace Peak.NextStep
                     new[] { (int)swCommandTabButtonTextDisplay_e.swCommandTabButton_TextBelow });
                 if (!added) Log($"AddCommands failed for docType {docType}");
             }
+        }
+
+        /// <summary>Icon sizes SolidWorks asks for, smallest first.</summary>
+        private static readonly int[] IconSizes = { 20, 32, 40, 64, 96, 128 };
+
+        /// <summary>
+        /// Point the command group at the PNG icon set shipped beside the DLL.
+        ///
+        /// SolidWorks takes ABSOLUTE paths and reads the files lazily, so a
+        /// missing file produces no error, no icon and no clue why. Every path
+        /// is checked here instead, and a missing set is logged and skipped so
+        /// the button still appears with SolidWorks' default artwork rather
+        /// than the add-in failing to load.
+        ///
+        /// IconList is the strip of command icons -- one square per command,
+        /// side by side -- and MainIconList is the group's own icon. With a
+        /// single command both are plain squares.
+        /// </summary>
+        private void ApplyIcons(ICommandGroup group)
+        {
+            try
+            {
+                string dir = Path.Combine(
+                    Path.GetDirectoryName(typeof(AddIn).Assembly.Location) ?? ".", "icons");
+
+                var commands = IconSizes.Select(s => Path.Combine(dir, $"NextStep_{s}.png")).ToArray();
+                var main = IconSizes.Select(s => Path.Combine(dir, $"NextStepMain_{s}.png")).ToArray();
+
+                var missing = commands.Concat(main).Where(p => !File.Exists(p)).ToList();
+                if (missing.Count > 0)
+                {
+                    Log($"icons not found ({missing.Count} missing, e.g. {missing[0]}); "
+                      + "using SolidWorks defaults");
+                    return;
+                }
+
+                group.IconList = commands;
+                group.MainIconList = main;
+            }
+            catch (Exception ex) { Log("ApplyIcons: " + ex.Message); }
         }
 
         private static bool SameIds(int[] a, int[] b)

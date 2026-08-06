@@ -5,6 +5,13 @@ obj/
 *.user
 *.suo
 
+# Release packaging
+dist/
+*.zip
+
+# Runtime logs written beside the add-in
+*.log
+
 # Spike scratch
 out/
 
@@ -13,6 +20,11 @@ corpus/*.sldprt
 corpus/*.SLDPRT
 corpus/*.sldasm
 corpus/*.SLDASM
+
+# Ad-hoc STEP exports made while testing against the corpus. The STEP files
+# that are evidence live in evidence/ and are tracked; these are throwaway.
+corpus/*.step
+corpus/*.STEP
 
 # Evidence: keep the small analysis artifacts, keep STEP/glTF probes too (they
 # are the citations FINDINGS.md rests on and are only a few hundred KB).

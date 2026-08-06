@@ -9,6 +9,16 @@
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AssemblyName>Peak.NextStep</AssemblyName>
     <RootNamespace>Peak.NextStep</RootNamespace>
+    <!--
+      Single source of the version. AddIn.AddInVersion reads it back off the
+      assembly, the installer reads it off the built DLL, and the release
+      script tags from it, so there is exactly one number to bump.
+    -->
+    <Version>0.1.0</Version>
+    <Authors>Peak Design</Authors>
+    <Product>NEXT-STEP</Product>
+    <Description>STEP export for SolidWorks that preserves the appearance hierarchy.</Description>
+    <Copyright>Copyright (c) 2026 Peak Design</Copyright>
     <!-- COM-visible add-in: RegAsm needs the type library information. -->
     <ComVisible>false</ComVisible>
     <NoWarn>$(NoWarn);CS0618</NoWarn>
@@ -33,6 +43,17 @@
     <Compile Include="..\..\tools\Peak.StepSpike.Harvest\Core\DeInstancer.cs" Link="Core\DeInstancer.cs" />
     <Compile Include="..\..\tools\Peak.StepSpike.Harvest\Core\MaterialWriter.cs" Link="Core\MaterialWriter.cs" />
     <Compile Include="..\..\tools\Peak.StepSpike.Harvest\Core\MaterialHarvester.cs" Link="Core\MaterialHarvester.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      SolidWorks reads these by absolute path at runtime, so they have to sit
+      beside the DLL rather than being embedded. Regenerate with
+      `python tools/make_icons.py` after editing the generator.
+    -->
+    <Content Include="icons\*.png" Link="icons\%(Filename)%(Extension)">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
