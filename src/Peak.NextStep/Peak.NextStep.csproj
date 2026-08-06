@@ -14,7 +14,7 @@
       assembly, the installer reads it off the built DLL, and the release
       script tags from it, so there is exactly one number to bump.
     -->
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <Authors>Peak Design</Authors>
     <Product>NEXT-STEP</Product>
     <Description>STEP export for SolidWorks that preserves the appearance hierarchy.</Description>

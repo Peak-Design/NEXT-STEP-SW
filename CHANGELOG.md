@@ -4,7 +4,7 @@ The notable changes to NEXT-STEP. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The version numbers
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.0] - 2026-08-06
 
 ### Added
 
