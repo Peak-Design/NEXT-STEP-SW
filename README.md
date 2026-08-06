@@ -96,6 +96,11 @@ dotnet build src\Peak.NextStep\Peak.NextStep.csproj -c Release
 src\Peak.NextStep\Register-Addin.bat
 ```
 
+## Support
+
+[Peak Design](https://github.com/Peak-Design) — current maintainer. Tips
+welcome: [ko-fi.com/oskarasspalvys](https://ko-fi.com/oskarasspalvys).
+
 ## Licence
 
 MIT. See [LICENSE](LICENSE). The MIT licence does not cover the SolidWorks
