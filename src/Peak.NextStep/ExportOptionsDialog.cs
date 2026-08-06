@@ -66,42 +66,38 @@ namespace Peak.NextStep
             };
 
             var intro = Prose(
-                "SolidWorks flattens component and assembly level appearance overrides "
-                + "when it writes STEP. This addon puts them back.",
+                "SolidWorks drops component and assembly appearance overrides when it "
+                + "writes STEP. This addon puts them back.",
                 SystemColors.ControlText);
             intro.Margin = new Padding(0, 0, 0, 10);
 
             _deInstance = Check("De-instance components that carry an override",
                                 deInstanceDefault);
             var deInstanceHelp = Prose(
-                "On: each overridden occurrence becomes its own part with its own "
-                + "colour. This duplicates geometry, but every reader then shows the "
-                + "SolidWorks appearance hierarchy.\n"
-                + "Off: the geometry stays fully instanced, and the colour of each "
-                + "occurrence becomes occurrence level styling. This output is compact "
-                + "and correct, but only readers that support occurrence styling show "
-                + "it.",
+                "On: instances that need different colours become separate parts, so "
+                + "every reader shows the right colour. Instances that share a colour "
+                + "stay instances.\n"
+                + "Off: every instance stays shared and the file is smaller, but only "
+                + "readers that support per-instance colour show it correctly.",
                 SystemColors.GrayText);
             deInstanceHelp.Margin = new Padding(20, 0, 0, 12);
 
             _engineeringMaterial = Check("Include engineering material (name and density)",
                                          engineeringMaterialDefault);
             var materialHelp = Prose(
-                "Writes the CAD material that SolidWorks never exports, for tools that "
-                + "read a material name and density.\n"
-                + "With de-instancing on, each different appearance also gets its own "
-                + "numbered variant of the name. Readers that build one material for "
-                + "each name then keep the colours apart.",
+                "Writes the material name and density, which SolidWorks does not "
+                + "export.\n"
+                + "With de-instancing on, the names are numbered per colour, such as "
+                + "\"Plain Carbon Steel.001\". Leave this off if the material name "
+                + "matters downstream.",
                 SystemColors.GrayText);
             materialHelp.Margin = new Padding(20, 0, 0, 12);
 
             _includeHidden = Check("Include hidden components", includeHiddenDefault);
             var hiddenHelp = Prose(
-                "SolidWorks keeps hidden components out of a STEP file. When this "
-                + "option is on, the addon shows them for the export and hides them "
-                + "again afterwards.\n"
-                + "Neither setting exports suppressed components, because SolidWorks "
-                + "must rebuild the assembly to resolve one.",
+                "Off: hidden components stay out of the file. On: they are exported "
+                + "with everything else.\n"
+                + "Suppressed components are never exported.",
                 SystemColors.GrayText);
             hiddenHelp.Margin = new Padding(20, 0, 0, 14);
 

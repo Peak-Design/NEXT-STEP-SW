@@ -143,14 +143,13 @@ namespace Peak.NextStep
 
                 int skipped = occurrences.Count(o => !o.Exported);
                 if (skipped > 0)
-                    notes.Add($"{skipped} component(s) hidden or suppressed and not exported.");
+                    notes.Add($"{skipped} component(s) hidden or suppressed, and not exported.");
 
                 int needFixing = occurrences.Count(o => o.OverridesPartInternals);
                 if (needFixing == 0)
                 {
-                    notes.Add($"{occurrences.Count} component(s). None of them carries a "
-                            + "component or assembly level override, so the appearance "
-                            + "needed no repair.");
+                    notes.Add($"{occurrences.Count} component(s). None carries an "
+                            + "override, so no appearance needed repair.");
                 }
                 else
                 {
@@ -158,15 +157,14 @@ namespace Peak.NextStep
                         .Match(occurrences, rw.FindOccurrences());
                     unmatched = pairs.Count(p => p.Key.OverridesPartInternals && p.Value == null);
                     applied = rw.ApplyOccurrenceColours(pairs, deInstance);
-                    notes.Add($"{occurrences.Count} component(s). Put back {applied} "
-                            + "occurrence appearance(s) that the SolidWorks export drops "
+                    notes.Add($"{occurrences.Count} component(s). Restored {applied} "
+                            + "appearance(s) "
                             + (deInstance ? "(de-instanced)." : "(instancing kept)."));
                 }
             }
             else
             {
-                notes.Add("This is a part document. SolidWorks already exports the colour "
-                        + "of each face correctly, so the appearance needed no repair.");
+                notes.Add("Part document. No appearance needed repair.");
             }
 
             // ── 3. Engineering material, which SolidWorks never exports ─────
@@ -186,15 +184,15 @@ namespace Peak.NextStep
 
                 notes.Add(withMaterial > 0
                     ? $"Wrote the engineering material for {withMaterial} part(s)."
-                    : "No part has an engineering material, so none was written.");
+                    : "No part has an engineering material.");
             }
 
             rw.Save(target);
 
             string msg = $"Exported {Path.GetFileName(target)}.\n\n" + string.Join("\n", notes);
             if (unmatched > 0)
-                msg += $"\n\nWARNING: {unmatched} occurrence(s) do not match the STEP file. "
-                     + "They keep the SolidWorks colour. See nextstep-debug.log.";
+                msg += $"\n\nWARNING: {unmatched} occurrence(s) could not be matched, and "
+                     + "keep the SolidWorks colour. See nextstep-debug.log.";
             return msg;
         }
 
