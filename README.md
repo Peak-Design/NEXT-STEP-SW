@@ -21,6 +21,9 @@ disappears. NEXT-STEP puts these colours back.
 <!-- Three-panel comparison: SolidWorks viewport / native STEP export / NEXT-STEP export -->
 ![SolidWorks viewport, native STEP export, and NEXT-STEP export compared](docs/images/comparison.png)
 
+<p align="center"><sub>STEP files imported into Blender with
+<a href="https://github.com/Peak-Design/STEPper_NEXT">STEPper NEXT</a>.</sub></p>
+
 ## What it fixes
 
 **Appearance overrides.** An override on a component or an assembly survives the
