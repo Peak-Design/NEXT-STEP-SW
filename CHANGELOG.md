@@ -8,9 +8,8 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- **Include hidden components** option, off by default. Off, hidden components
-  stay out of the file. On, they are exported with everything else. Suppressed
-  components are never exported.
+- **Include hidden components** option, off by default. Suppressed components
+  are never exported.
 
 ### Fixed
 

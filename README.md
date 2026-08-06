@@ -66,9 +66,8 @@ Turn de-instancing off to keep every instance shared. The file is smaller, but
 only readers that support per-instance colour show the right colours. Most do
 not, including Fusion 360.
 
-**Include hidden components (default off).** Off, hidden components stay out of
-the file. On, they are exported with everything else. Suppressed components are
-never exported.
+**Include hidden components (default off).** Suppressed components are never
+exported.
 
 **Engineering material (default off).** Writes the material name and density.
 

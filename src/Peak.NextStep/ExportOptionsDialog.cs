@@ -95,9 +95,7 @@ namespace Peak.NextStep
 
             _includeHidden = Check("Include hidden components", includeHiddenDefault);
             var hiddenHelp = Prose(
-                "Off: hidden components stay out of the file. On: they are exported "
-                + "with everything else.\n"
-                + "Suppressed components are never exported.",
+                "Suppressed components are never exported.",
                 SystemColors.GrayText);
             hiddenHelp.Margin = new Padding(20, 0, 0, 14);
 
