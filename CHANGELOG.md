@@ -23,9 +23,9 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   parent, instead of producing a false "unmatched" warning.
 - Multibody parts: every body of an overridden part takes the colour, not just
   the first.
-- Two uses of one shared sub-assembly that need different colours cannot both
-  be right without a structural copy. The export now reports this case and
-  leaves those parts alone, instead of colouring them wrongly.
+- Two uses of one shared sub-assembly can now show different colours inside.
+  The export copies the sub-assembly structure for the uses that differ. The
+  geometry stays shared, and uses that look the same stay on one definition.
 - The export report no longer warns that hidden and suppressed components could
   not be matched. They are absent from the file by design.
 

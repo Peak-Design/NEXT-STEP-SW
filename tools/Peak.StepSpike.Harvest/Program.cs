@@ -85,6 +85,13 @@ Example:
                             Array.IndexOf(args, "--materials") >= 0,
                             Arg(args, "--model", null));
                     }
+                    case "splitprobe":
+                    {
+                        string sOut = Arg(args, "--out", Path.Combine(root, "evidence", "S9"));
+                        Directory.CreateDirectory(sOut);
+                        Log.Init(Path.Combine(sOut, "splitprobe.log"));
+                        return SplitProbe.Run(Arg(args, "--file", null), sOut);
+                    }
                     case "hidden":
                     {
                         string hOut = Arg(args, "--out", Path.Combine(root, "evidence", "S8"));

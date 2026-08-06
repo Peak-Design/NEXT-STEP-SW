@@ -185,6 +185,72 @@ namespace Peak.NextStep.Core
         }
 
         /// <summary>
+        /// Clones the STRUCTURE of one sub-assembly definition: the product
+        /// chain, the shape representation with the child placements, and the
+        /// occurrence entities of its direct children. The children keep
+        /// pointing at the same child definitions. No geometry is copied here.
+        ///
+        /// This exists for one case: two uses of a shared sub-assembly whose
+        /// insides must show different colours. One definition cannot show
+        /// both. After the clone, each divergent group of uses has its own
+        /// definition, and the ordinary per-part logic colours their leaves
+        /// independently.
+        /// </summary>
+        public Dictionary<int, int> CloneAssemblyStructure(int defPd, IEnumerable<int> childNauos)
+        {
+            int pds = _step.ByType("PRODUCT_DEFINITION_SHAPE")
+                           .FirstOrDefault(p => _step.Refs(p).Contains(defPd));
+            int sdr = pds == 0 ? 0 : _step.ByType("SHAPE_DEFINITION_REPRESENTATION")
+                           .FirstOrDefault(s => _step.Refs(s).Contains(pds));
+            int sr = sdr == 0 ? 0 : _step.Refs(sdr)
+                           .FirstOrDefault(r => _step.TypeOf(r) == "SHAPE_REPRESENTATION");
+            if (sr == 0)
+            {
+                _log?.Invoke($"    definition #{defPd}: no shape representation, cannot clone");
+                return null;
+            }
+
+            // The representation closure holds only the child placements: an
+            // assembly shape representation carries axis placements, no B-rep.
+            var toClone = Closure(new[] { sr });
+            foreach (var extra in Closure(new[] { defPd })) toClone.Add(extra);
+            toClone.Add(defPd);
+            toClone.Add(pds);
+            toClone.Add(sdr);
+
+            // The occurrence entities of each direct child, picked one by one.
+            // A blind closure from a NAUO would walk into the child definition
+            // and copy its geometry, which must stay shared.
+            foreach (var nauo in childNauos)
+            {
+                toClone.Add(nauo);
+                int pdsN = _step.ByType("PRODUCT_DEFINITION_SHAPE")
+                                .FirstOrDefault(p => _step.Refs(p).Contains(nauo));
+                if (pdsN == 0) continue;
+                toClone.Add(pdsN);
+                int cdsr = _step.ByType("CONTEXT_DEPENDENT_SHAPE_REPRESENTATION")
+                                .FirstOrDefault(cs => _step.Refs(cs).Contains(pdsN));
+                if (cdsr == 0) continue;
+                toClone.Add(cdsr);
+                foreach (var rel in _step.Refs(cdsr))
+                {
+                    var t = _step.TypeOf(rel) ?? "";
+                    if (t.IndexOf("REPRESENTATION_RELATIONSHIP", StringComparison.Ordinal) < 0)
+                        continue;
+                    toClone.Add(rel);
+                    foreach (var idt in _step.Refs(rel))
+                        if (_step.TypeOf(idt) == "ITEM_DEFINED_TRANSFORMATION")
+                            toClone.Add(idt);
+                }
+            }
+
+            // References into the set follow the copies. References out of the
+            // set, such as the child product definitions and their shape
+            // representations, stay on the originals.
+            return CloneAll(toClone);
+        }
+
+        /// <summary>
         /// Points one occurrence at a copy. This changes the part product
         /// definition of its NAUO, and the reference from the placement chain to
         /// the shape representation of the part. You can call this for several

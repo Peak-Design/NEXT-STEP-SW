@@ -371,9 +371,13 @@ namespace Peak.NextStep.Core
             // entities, however many times the definition is used. Several
             // component paths therefore land on the same NAUO. When they agree
             // on the appearance, one write serves them all. When they disagree,
-            // the file cannot show both without a copy of the whole
-            // sub-assembly structure, which this code does not make yet. Those
-            // occurrences keep the SolidWorks colour, and the log names them.
+            // the definition is copied first, so that each divergent group of
+            // uses styles its own occurrence entities.
+            int splits = SplitSharedDefinitions(pairs);
+            if (splits > 0)
+                _log?.Invoke($"    {splits} shared sub-assembly definition(s) copied, because "
+                           + "their uses need different colours");
+
             var leaves = pairs.Where(p => p.Value != null && p.Key.Children.Count == 0).ToList();
 
             var byNauo = new List<KeyValuePair<OccurrenceAppearance, OccurrenceRef>>();
@@ -384,6 +388,9 @@ namespace Peak.NextStep.Core
                     .Distinct().ToList();
                 if (signatures.Count > 1)
                 {
+                    // The split above makes this unreachable. If it fires, the
+                    // occurrences keep the SolidWorks colour: a missing colour
+                    // is honest, a wrong one is not.
                     _log?.Invoke($"    CONFLICT: {string.Join(" / ", group.Select(p => p.Key.Path))} "
                                + "share one sub-assembly definition but need different colours; "
                                + "they keep the SolidWorks colour");
@@ -484,6 +491,175 @@ namespace Peak.NextStep.Core
                 }
             }
             return applied;
+        }
+
+        /// <summary>
+        /// Copies a sub-assembly definition for each group of uses that must
+        /// not look like the others. Mutates the matched pairs so that the
+        /// repointed uses and their direct children reference the copies.
+        /// Returns the number of copies made.
+        ///
+        /// Definitions split parents before children, by the depth of their
+        /// uses. When a parent splits, the uses of a definition nested inside
+        /// it land on distinct occurrence entities, one set per parent copy.
+        /// A divergence deeper down can then split the nested definition on
+        /// its own, and the recursion needs no special case.
+        /// </summary>
+        private int SplitSharedDefinitions(
+            List<KeyValuePair<OccurrenceAppearance, OccurrenceRef>> pairs)
+        {
+            var indexOf = new Dictionary<OccurrenceAppearance, int>();
+            for (int i = 0; i < pairs.Count; i++)
+                if (pairs[i].Value != null) indexOf[pairs[i].Key] = i;
+
+            // The uses of each assembly definition, over the whole matched tree.
+            var usesByDef = new Dictionary<int, List<OccurrenceAppearance>>();
+            foreach (var p in pairs)
+            {
+                if (p.Value == null) continue;
+                if (!ChildrenByParentPd.ContainsKey(p.Value.ChildPd)) continue;   // a part
+                if (!usesByDef.TryGetValue(p.Value.ChildPd, out var list))
+                    usesByDef[p.Value.ChildPd] = list = new List<OccurrenceAppearance>();
+                list.Add(p.Key);
+            }
+
+            var ordered = usesByDef.Where(kv => kv.Value.Count > 1)
+                .OrderBy(kv => kv.Value.Min(u => Depth(u.Path)))
+                .ToList();
+
+            var di = new DeInstancer(_step, _log);
+            int clones = 0;
+
+            foreach (var def in ordered)
+            {
+                var groups = def.Value.GroupBy(SubtreeSignature).ToList();
+                if (groups.Count <= 1) continue;
+
+                var childRefs = ChildrenByParentPd[def.Key];
+                string defName = _step.NameOf(ProductOf(def.Key)) ?? ("#" + def.Key);
+
+                // The largest group keeps the original definition.
+                foreach (var group in groups.OrderByDescending(g => g.Count()).Skip(1))
+                {
+                    var map = di.CloneAssemblyStructure(def.Key,
+                        childRefs.Select(c => c.NauoId).ToList());
+                    if (map == null)
+                    {
+                        _log?.Invoke($"    {defName}: clone failed; "
+                                   + $"{group.Count()} use(s) keep the SolidWorks colour");
+                        continue;
+                    }
+                    clones++;
+
+                    // The occurrence records of the copy mirror the originals.
+                    // The child definitions and the geometry stay shared.
+                    var cloneRefByNauo = new Dictionary<int, OccurrenceRef>();
+                    var clonedKids = new List<OccurrenceRef>();
+                    foreach (var c in childRefs)
+                    {
+                        var nc = new OccurrenceRef
+                        {
+                            NauoId = map[c.NauoId],
+                            ParentPd = map[def.Key],
+                            ChildPd = c.ChildPd,
+                            ProductName = c.ProductName,
+                            Translation = c.Translation,
+                            TargetItems = c.TargetItems,
+                            BaseStyledItemId = c.BaseStyledItemId,
+                        };
+                        cloneRefByNauo[c.NauoId] = nc;
+                        clonedKids.Add(nc);
+                    }
+                    ChildrenByParentPd[map[def.Key]] = clonedKids;
+
+                    // Point each use of this group at the copy. Two paths
+                    // through one shared parent share one use entity, so the
+                    // rewiring runs once per entity.
+                    var repointed = new HashSet<int>();
+                    foreach (var use in group)
+                    {
+                        int idx = indexOf[use];
+                        var occ = pairs[idx].Value;
+                        if (repointed.Add(occ.NauoId))
+                            di.PointOccurrenceAt(occ, new DeInstancer.PartCopy { Map = map });
+                        pairs[idx] = Pair(use, new OccurrenceRef
+                        {
+                            NauoId = occ.NauoId,
+                            ParentPd = occ.ParentPd,
+                            ChildPd = map[def.Key],
+                            ProductName = occ.ProductName,
+                            Translation = occ.Translation,
+                        });
+                        RemapDescendants(use, cloneRefByNauo, pairs, indexOf);
+                    }
+
+                    _log?.Invoke($"    split {defName}: {group.Count()} use(s) get their own "
+                               + $"copy of the structure ({map.Count} entities), because "
+                               + "their insides need different colours");
+                }
+            }
+            return clones;
+        }
+
+        /// <summary>Repoints the matched pairs of the direct children under one
+        /// use at the cloned occurrence entities. Deeper descendants stay: their
+        /// entities live in nested definitions, which stay shared until their
+        /// own uses diverge.</summary>
+        private static void RemapDescendants(OccurrenceAppearance node,
+            Dictionary<int, OccurrenceRef> cloneRefByNauo,
+            List<KeyValuePair<OccurrenceAppearance, OccurrenceRef>> pairs,
+            Dictionary<OccurrenceAppearance, int> indexOf)
+        {
+            foreach (var child in node.Children)
+            {
+                if (indexOf.TryGetValue(child, out var i))
+                {
+                    var r = pairs[i].Value;
+                    if (r != null && cloneRefByNauo.TryGetValue(r.NauoId, out var nc))
+                        pairs[i] = Pair(child, nc);
+                }
+                RemapDescendants(child, cloneRefByNauo, pairs, indexOf);
+            }
+        }
+
+        private static KeyValuePair<OccurrenceAppearance, OccurrenceRef> Pair(
+            OccurrenceAppearance a, OccurrenceRef b)
+            => new KeyValuePair<OccurrenceAppearance, OccurrenceRef>(a, b);
+
+        private static int Depth(string path)
+        {
+            int n = 0;
+            foreach (var c in path ?? "") if (c == '/') n++;
+            return n;
+        }
+
+        /// <summary>
+        /// What this use will look like, as a string. Two uses with equal
+        /// signatures can share one definition. The signature covers every
+        /// exported leaf below the use: its path relative to the use, and the
+        /// colour it resolved to, or "original" for a leaf with no override.
+        /// </summary>
+        private static string SubtreeSignature(OccurrenceAppearance use)
+        {
+            var entries = new List<string>();
+            CollectSignature(use, use.Path?.Length ?? 0, entries);
+            entries.Sort(StringComparer.Ordinal);
+            return string.Join("|", entries);
+        }
+
+        private static void CollectSignature(OccurrenceAppearance n, int prefixLen,
+                                             List<string> entries)
+        {
+            if (!n.Exported) return;
+            if (n.Children.Count == 0)
+            {
+                string rel = n.Path != null && n.Path.Length > prefixLen
+                    ? n.Path.Substring(prefixLen) : n.Path ?? "";
+                entries.Add(rel + "="
+                    + (n.OverridesPartInternals ? AppearanceKey(n) : "original"));
+                return;
+            }
+            foreach (var c in n.Children) CollectSignature(c, prefixLen, entries);
         }
 
         /// <summary>
