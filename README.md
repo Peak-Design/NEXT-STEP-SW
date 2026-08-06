@@ -7,7 +7,8 @@
   <strong>STEP export for SolidWorks that keeps your appearances.</strong><br>
   <a href="../../releases/latest">Download</a> ·
   <a href="#install">Install</a> ·
-  <a href="#what-it-fixes">What it fixes</a>
+  <a href="#what-it-fixes">What it fixes</a> ·
+  <a href="https://ko-fi.com/oskarasspalvys">Tip jar</a>
 </p>
 
 ---
@@ -99,7 +100,9 @@ src\Peak.NextStep\Register-Addin.bat
 ## Support
 
 [Peak Design](https://github.com/Peak-Design) — current maintainer. Tips
-welcome: [ko-fi.com/oskarasspalvys](https://ko-fi.com/oskarasspalvys).
+welcome:
+
+[![Support me on Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/oskarasspalvys)
 
 ## Licence
 
