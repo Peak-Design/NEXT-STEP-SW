@@ -96,8 +96,6 @@ dotnet build src\Peak.NextStep\Peak.NextStep.csproj -c Release
 src\Peak.NextStep\Register-Addin.bat
 ```
 
-To make a release, see [RELEASING.md](RELEASING.md).
-
 ## Licence
 
 MIT. See [LICENSE](LICENSE). The MIT licence does not cover the SolidWorks

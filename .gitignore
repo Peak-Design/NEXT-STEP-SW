@@ -15,6 +15,7 @@ dist/
 # Development material that stays on the dev machine. The public repository
 # holds the add-in, the installer and the release script, nothing else.
 /PLAN.md
+/RELEASING.md
 /corpus/
 /evidence/
 /spikes/
