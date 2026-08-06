@@ -1,0 +1,666 @@
+[
+  {
+    "case": "control",
+    "ap": "AP214",
+    "description": "two boxes, no appearance",
+    "file": "control_ap214.step",
+    "schema": "AUTOMOTIVE_DESIGN { 1 0 10303 214 1 1 1 1 }",
+    "total_entities": 717,
+    "presentation_counts": {},
+    "styled_item_targets": {},
+    "distinct_colours": [],
+    "faces": 12,
+    "solids": 2,
+    "occurrences": 1,
+    "ok": true
+  },
+  {
+    "case": "control",
+    "ap": "AP242",
+    "description": "two boxes, no appearance",
+    "file": "control_ap242.step",
+    "schema": "AP242_MANAGED_MODEL_BASED_3D_ENGINEERING_MIM_LF {1 0 10303 442 1 1 4 }",
+    "total_entities": 717,
+    "presentation_counts": {},
+    "styled_item_targets": {},
+    "distinct_colours": [],
+    "faces": 12,
+    "solids": 2,
+    "occurrences": 1,
+    "ok": true
+  },
+  {
+    "case": "solid_colour",
+    "ap": "AP214",
+    "description": "colour on each shape label (ColorSurf)",
+    "file": "solid_colour_ap214.step",
+    "schema": "AUTOMOTIVE_DESIGN { 1 0 10303 214 1 1 1 1 }",
+    "total_entities": 746,
+    "presentation_counts": {
+      "STYLED_ITEM": 3,
+      "PRESENTATION_STYLE_ASSIGNMENT": 1,
+      "PRESENTATION_STYLE_BY_CONTEXT": 2,
+      "SURFACE_STYLE_USAGE": 3,
+      "SURFACE_SIDE_STYLE": 3,
+      "SURFACE_STYLE_FILL_AREA": 3,
+      "FILL_AREA_STYLE": 3,
+      "FILL_AREA_STYLE_COLOUR": 3,
+      "COLOUR_RGB": 2,
+      "MECHANICAL_DESIGN_GEOMETRIC_PRESENTATION_REPRESENTATION": 2
+    },
+    "styled_item_targets": {
+      "STYLED_ITEM": {
+        "MANIFOLD_SOLID_BREP": 3
+      }
+    },
+    "distinct_colours": [
+      [
+        0.1,
+        0.2,
+        0.9
+      ],
+      [
+        0.8,
+        0.1,
+        0.1
+      ]
+    ],
+    "faces": 12,
+    "solids": 2,
+    "occurrences": 1,
+    "ok": true
+  },
+  {
+    "case": "solid_colour",
+    "ap": "AP242",
+    "description": "colour on each shape label (ColorSurf)",
+    "file": "solid_colour_ap242.step",
+    "schema": "AP242_MANAGED_MODEL_BASED_3D_ENGINEERING_MIM_LF {1 0 10303 442 1 1 4 }",
+    "total_entities": 746,
+    "presentation_counts": {
+      "STYLED_ITEM": 3,
+      "PRESENTATION_STYLE_ASSIGNMENT": 1,
+      "PRESENTATION_STYLE_BY_CONTEXT": 2,
+      "SURFACE_STYLE_USAGE": 3,
+      "SURFACE_SIDE_STYLE": 3,
+      "SURFACE_STYLE_FILL_AREA": 3,
+      "FILL_AREA_STYLE": 3,
+      "FILL_AREA_STYLE_COLOUR": 3,
+      "COLOUR_RGB": 2,
+      "MECHANICAL_DESIGN_GEOMETRIC_PRESENTATION_REPRESENTATION": 2
+    },
+    "styled_item_targets": {
+      "STYLED_ITEM": {
+        "MANIFOLD_SOLID_BREP": 3
+      }
+    },
+    "distinct_colours": [
+      [
+        0.1,
+        0.2,
+        0.9
+      ],
+      [
+        0.8,
+        0.1,
+        0.1
+      ]
+    ],
+    "faces": 12,
+    "solids": 2,
+    "occurrences": 1,
+    "ok": true
+  },
+  {
+    "case": "face_colour",
+    "ap": "AP214",
+    "description": "solid colour + per-face colour on 3 of 6 faces",
+    "file": "face_colour_ap214.step",
+    "schema": "AUTOMOTIVE_DESIGN { 1 0 10303 214 1 1 1 1 }",
+    "total_entities": 382,
+    "presentation_counts": {
+      "STYLED_ITEM": 1,
+      "OVER_RIDING_STYLED_ITEM": 3,
+      "PRESENTATION_STYLE_ASSIGNMENT": 4,
+      "SURFACE_STYLE_USAGE": 4,
+      "SURFACE_SIDE_STYLE": 4,
+      "SURFACE_STYLE_FILL_AREA": 4,
+      "FILL_AREA_STYLE": 4,
+      "FILL_AREA_STYLE_COLOUR": 4,
+      "COLOUR_RGB": 3,
+      "MECHANICAL_DESIGN_GEOMETRIC_PRESENTATION_REPRESENTATION": 1
+    },
+    "styled_item_targets": {
+      "STYLED_ITEM": {
+        "MANIFOLD_SOLID_BREP": 1
+      },
+      "OVER_RIDING_STYLED_ITEM": {
+        "ADVANCED_FACE": 3
+      }
+    },
+    "distinct_colours": [
+      [
+        0.1,
+        0.2,
+        0.9
+      ],
+      [
+        0.1,
+        0.7,
+        0.2
+      ],
+      [
+        0.8,
+        0.1,
+        0.1
+      ]
+    ],
+    "faces": 6,
+    "solids": 1,
+    "occurrences": 0,
+    "ok": true
+  },
+  {
+    "case": "face_colour",
+    "ap": "AP242",
+    "description": "solid colour + per-face colour on 3 of 6 faces",
+    "file": "face_colour_ap242.step",
+    "schema": "AP242_MANAGED_MODEL_BASED_3D_ENGINEERING_MIM_LF {1 0 10303 442 1 1 4 }",
+    "total_entities": 382,
+    "presentation_counts": {
+      "STYLED_ITEM": 1,
+      "OVER_RIDING_STYLED_ITEM": 3,
+      "PRESENTATION_STYLE_ASSIGNMENT": 4,
+      "SURFACE_STYLE_USAGE": 4,
+      "SURFACE_SIDE_STYLE": 4,
+      "SURFACE_STYLE_FILL_AREA": 4,
+      "FILL_AREA_STYLE": 4,
+      "FILL_AREA_STYLE_COLOUR": 4,
+      "COLOUR_RGB": 3,
+      "MECHANICAL_DESIGN_GEOMETRIC_PRESENTATION_REPRESENTATION": 1
+    },
+    "styled_item_targets": {
+      "STYLED_ITEM": {
+        "MANIFOLD_SOLID_BREP": 1
+      },
+      "OVER_RIDING_STYLED_ITEM": {
+        "ADVANCED_FACE": 3
+      }
+    },
+    "distinct_colours": [
+      [
+        0.1,
+        0.2,
+        0.9
+      ],
+      [
+        0.1,
+        0.7,
+        0.2
+      ],
+      [
+        0.8,
+        0.1,
+        0.1
+      ]
+    ],
+    "faces": 6,
+    "solids": 1,
+    "occurrences": 0,
+    "ok": true
+  },
+  {
+    "case": "instance_col",
+    "ap": "AP214",
+    "description": "assembly: green part, instance overrides red/blue",
+    "file": "instance_col_ap214.step",
+    "schema": "AUTOMOTIVE_DESIGN { 1 0 10303 214 1 1 1 1 }",
+    "total_entities": 423,
+    "presentation_counts": {
+      "STYLED_ITEM": 1,
+      "OVER_RIDING_STYLED_ITEM": 3,
+      "PRESENTATION_STYLE_ASSIGNMENT": 1,
+      "PRESENTATION_STYLE_BY_CONTEXT": 3,
+      "SURFACE_STYLE_USAGE": 4,
+      "SURFACE_SIDE_STYLE": 4,
+      "SURFACE_STYLE_FILL_AREA": 4,
+      "FILL_AREA_STYLE": 4,
+      "FILL_AREA_STYLE_COLOUR": 4,
+      "COLOUR_RGB": 4,
+      "MECHANICAL_DESIGN_GEOMETRIC_PRESENTATION_REPRESENTATION": 1
+    },
+    "styled_item_targets": {
+      "STYLED_ITEM": {
+        "MANIFOLD_SOLID_BREP": 1
+      },
+      "OVER_RIDING_STYLED_ITEM": {
+        "MANIFOLD_SOLID_BREP": 3
+      }
+    },
+    "distinct_colours": [
+      [
+        0.1,
+        0.2,
+        0.9
+      ],
+      [
+        0.1,
+        0.7,
+        0.2
+      ],
+      [
+        0.8,
+        0.1,
+        0.1
+      ]
+    ],
+    "faces": 6,
+    "solids": 1,
+    "occurrences": 2,
+    "ok": true
+  },
+  {
+    "case": "instance_col",
+    "ap": "AP242",
+    "description": "assembly: green part, instance overrides red/blue",
+    "file": "instance_col_ap242.step",
+    "schema": "AP242_MANAGED_MODEL_BASED_3D_ENGINEERING_MIM_LF {1 0 10303 442 1 1 4 }",
+    "total_entities": 423,
+    "presentation_counts": {
+      "STYLED_ITEM": 1,
+      "OVER_RIDING_STYLED_ITEM": 3,
+      "PRESENTATION_STYLE_ASSIGNMENT": 1,
+      "PRESENTATION_STYLE_BY_CONTEXT": 3,
+      "SURFACE_STYLE_USAGE": 4,
+      "SURFACE_SIDE_STYLE": 4,
+      "SURFACE_STYLE_FILL_AREA": 4,
+      "FILL_AREA_STYLE": 4,
+      "FILL_AREA_STYLE_COLOUR": 4,
+      "COLOUR_RGB": 4,
+      "MECHANICAL_DESIGN_GEOMETRIC_PRESENTATION_REPRESENTATION": 1
+    },
+    "styled_item_targets": {
+      "STYLED_ITEM": {
+        "MANIFOLD_SOLID_BREP": 1
+      },
+      "OVER_RIDING_STYLED_ITEM": {
+        "MANIFOLD_SOLID_BREP": 3
+      }
+    },
+    "distinct_colours": [
+      [
+        0.1,
+        0.2,
+        0.9
+      ],
+      [
+        0.1,
+        0.7,
+        0.2
+      ],
+      [
+        0.8,
+        0.1,
+        0.1
+      ]
+    ],
+    "faces": 6,
+    "solids": 1,
+    "occurrences": 2,
+    "ok": true
+  },
+  {
+    "case": "vis_common",
+    "ap": "AP214",
+    "description": "XCAFDoc_VisMaterialCommon only",
+    "file": "vis_common_ap214.step",
+    "schema": "AUTOMOTIVE_DESIGN { 1 0 10303 214 1 1 1 1 }",
+    "total_entities": 361,
+    "presentation_counts": {
+      "STYLED_ITEM": 1,
+      "PRESENTATION_STYLE_ASSIGNMENT": 1,
+      "SURFACE_STYLE_USAGE": 1,
+      "SURFACE_SIDE_STYLE": 1,
+      "SURFACE_STYLE_FILL_AREA": 1,
+      "SURFACE_STYLE_RENDERING_WITH_PROPERTIES": 1,
+      "SURFACE_STYLE_TRANSPARENT": 1,
+      "FILL_AREA_STYLE": 1,
+      "FILL_AREA_STYLE_COLOUR": 1,
+      "COLOUR_RGB": 1,
+      "MECHANICAL_DESIGN_GEOMETRIC_PRESENTATION_REPRESENTATION": 1
+    },
+    "styled_item_targets": {
+      "STYLED_ITEM": {
+        "MANIFOLD_SOLID_BREP": 1
+      }
+    },
+    "distinct_colours": [
+      [
+        0.8,
+        0.1,
+        0.1
+      ]
+    ],
+    "faces": 6,
+    "solids": 1,
+    "occurrences": 0,
+    "ok": true
+  },
+  {
+    "case": "vis_common",
+    "ap": "AP242",
+    "description": "XCAFDoc_VisMaterialCommon only",
+    "file": "vis_common_ap242.step",
+    "schema": "AP242_MANAGED_MODEL_BASED_3D_ENGINEERING_MIM_LF {1 0 10303 442 1 1 4 }",
+    "total_entities": 361,
+    "presentation_counts": {
+      "STYLED_ITEM": 1,
+      "PRESENTATION_STYLE_ASSIGNMENT": 1,
+      "SURFACE_STYLE_USAGE": 1,
+      "SURFACE_SIDE_STYLE": 1,
+      "SURFACE_STYLE_FILL_AREA": 1,
+      "SURFACE_STYLE_RENDERING_WITH_PROPERTIES": 1,
+      "SURFACE_STYLE_TRANSPARENT": 1,
+      "FILL_AREA_STYLE": 1,
+      "FILL_AREA_STYLE_COLOUR": 1,
+      "COLOUR_RGB": 1,
+      "MECHANICAL_DESIGN_GEOMETRIC_PRESENTATION_REPRESENTATION": 1
+    },
+    "styled_item_targets": {
+      "STYLED_ITEM": {
+        "MANIFOLD_SOLID_BREP": 1
+      }
+    },
+    "distinct_colours": [
+      [
+        0.8,
+        0.1,
+        0.1
+      ]
+    ],
+    "faces": 6,
+    "solids": 1,
+    "occurrences": 0,
+    "ok": true
+  },
+  {
+    "case": "vis_pbr",
+    "ap": "AP214",
+    "description": "XCAFDoc_VisMaterialPBR only (metallic 0.9, roughness 0.15)",
+    "file": "vis_pbr_ap214.step",
+    "schema": "AUTOMOTIVE_DESIGN { 1 0 10303 214 1 1 1 1 }",
+    "total_entities": 359,
+    "presentation_counts": {
+      "STYLED_ITEM": 1,
+      "PRESENTATION_STYLE_ASSIGNMENT": 1,
+      "SURFACE_STYLE_USAGE": 1,
+      "SURFACE_SIDE_STYLE": 1,
+      "SURFACE_STYLE_FILL_AREA": 1,
+      "FILL_AREA_STYLE": 1,
+      "FILL_AREA_STYLE_COLOUR": 1,
+      "COLOUR_RGB": 1,
+      "MECHANICAL_DESIGN_GEOMETRIC_PRESENTATION_REPRESENTATION": 1
+    },
+    "styled_item_targets": {
+      "STYLED_ITEM": {
+        "MANIFOLD_SOLID_BREP": 1
+      }
+    },
+    "distinct_colours": [
+      [
+        0.1,
+        0.2,
+        0.9
+      ]
+    ],
+    "faces": 6,
+    "solids": 1,
+    "occurrences": 0,
+    "ok": true
+  },
+  {
+    "case": "vis_pbr",
+    "ap": "AP242",
+    "description": "XCAFDoc_VisMaterialPBR only (metallic 0.9, roughness 0.15)",
+    "file": "vis_pbr_ap242.step",
+    "schema": "AP242_MANAGED_MODEL_BASED_3D_ENGINEERING_MIM_LF {1 0 10303 442 1 1 4 }",
+    "total_entities": 359,
+    "presentation_counts": {
+      "STYLED_ITEM": 1,
+      "PRESENTATION_STYLE_ASSIGNMENT": 1,
+      "SURFACE_STYLE_USAGE": 1,
+      "SURFACE_SIDE_STYLE": 1,
+      "SURFACE_STYLE_FILL_AREA": 1,
+      "FILL_AREA_STYLE": 1,
+      "FILL_AREA_STYLE_COLOUR": 1,
+      "COLOUR_RGB": 1,
+      "MECHANICAL_DESIGN_GEOMETRIC_PRESENTATION_REPRESENTATION": 1
+    },
+    "styled_item_targets": {
+      "STYLED_ITEM": {
+        "MANIFOLD_SOLID_BREP": 1
+      }
+    },
+    "distinct_colours": [
+      [
+        0.1,
+        0.2,
+        0.9
+      ]
+    ],
+    "faces": 6,
+    "solids": 1,
+    "occurrences": 0,
+    "ok": true
+  },
+  {
+    "case": "combined",
+    "ap": "AP214",
+    "description": "colour + common + pbr on the same shape",
+    "file": "combined_ap214.step",
+    "schema": "AUTOMOTIVE_DESIGN { 1 0 10303 214 1 1 1 1 }",
+    "total_entities": 359,
+    "presentation_counts": {
+      "STYLED_ITEM": 1,
+      "PRESENTATION_STYLE_ASSIGNMENT": 1,
+      "SURFACE_STYLE_USAGE": 1,
+      "SURFACE_SIDE_STYLE": 1,
+      "SURFACE_STYLE_FILL_AREA": 1,
+      "FILL_AREA_STYLE": 1,
+      "FILL_AREA_STYLE_COLOUR": 1,
+      "COLOUR_RGB": 1,
+      "MECHANICAL_DESIGN_GEOMETRIC_PRESENTATION_REPRESENTATION": 1
+    },
+    "styled_item_targets": {
+      "STYLED_ITEM": {
+        "MANIFOLD_SOLID_BREP": 1
+      }
+    },
+    "distinct_colours": [
+      [
+        0.8,
+        0.1,
+        0.1
+      ]
+    ],
+    "faces": 6,
+    "solids": 1,
+    "occurrences": 0,
+    "ok": true
+  },
+  {
+    "case": "combined",
+    "ap": "AP242",
+    "description": "colour + common + pbr on the same shape",
+    "file": "combined_ap242.step",
+    "schema": "AP242_MANAGED_MODEL_BASED_3D_ENGINEERING_MIM_LF {1 0 10303 442 1 1 4 }",
+    "total_entities": 359,
+    "presentation_counts": {
+      "STYLED_ITEM": 1,
+      "PRESENTATION_STYLE_ASSIGNMENT": 1,
+      "SURFACE_STYLE_USAGE": 1,
+      "SURFACE_SIDE_STYLE": 1,
+      "SURFACE_STYLE_FILL_AREA": 1,
+      "FILL_AREA_STYLE": 1,
+      "FILL_AREA_STYLE_COLOUR": 1,
+      "COLOUR_RGB": 1,
+      "MECHANICAL_DESIGN_GEOMETRIC_PRESENTATION_REPRESENTATION": 1
+    },
+    "styled_item_targets": {
+      "STYLED_ITEM": {
+        "MANIFOLD_SOLID_BREP": 1
+      }
+    },
+    "distinct_colours": [
+      [
+        0.8,
+        0.1,
+        0.1
+      ]
+    ],
+    "faces": 6,
+    "solids": 1,
+    "occurrences": 0,
+    "ok": true
+  },
+  {
+    "case": "colour_common",
+    "ap": "AP214",
+    "description": "ColorTool colour + VisMaterialCommon (no PBR)",
+    "file": "colour_common_ap214.step",
+    "schema": "AUTOMOTIVE_DESIGN { 1 0 10303 214 1 1 1 1 }",
+    "total_entities": 359,
+    "presentation_counts": {
+      "STYLED_ITEM": 1,
+      "PRESENTATION_STYLE_ASSIGNMENT": 1,
+      "SURFACE_STYLE_USAGE": 1,
+      "SURFACE_SIDE_STYLE": 1,
+      "SURFACE_STYLE_FILL_AREA": 1,
+      "FILL_AREA_STYLE": 1,
+      "FILL_AREA_STYLE_COLOUR": 1,
+      "COLOUR_RGB": 1,
+      "MECHANICAL_DESIGN_GEOMETRIC_PRESENTATION_REPRESENTATION": 1
+    },
+    "styled_item_targets": {
+      "STYLED_ITEM": {
+        "MANIFOLD_SOLID_BREP": 1
+      }
+    },
+    "distinct_colours": [
+      [
+        0.1,
+        0.7,
+        0.2
+      ]
+    ],
+    "faces": 6,
+    "solids": 1,
+    "occurrences": 0,
+    "ok": true
+  },
+  {
+    "case": "colour_common",
+    "ap": "AP242",
+    "description": "ColorTool colour + VisMaterialCommon (no PBR)",
+    "file": "colour_common_ap242.step",
+    "schema": "AP242_MANAGED_MODEL_BASED_3D_ENGINEERING_MIM_LF {1 0 10303 442 1 1 4 }",
+    "total_entities": 359,
+    "presentation_counts": {
+      "STYLED_ITEM": 1,
+      "PRESENTATION_STYLE_ASSIGNMENT": 1,
+      "SURFACE_STYLE_USAGE": 1,
+      "SURFACE_SIDE_STYLE": 1,
+      "SURFACE_STYLE_FILL_AREA": 1,
+      "FILL_AREA_STYLE": 1,
+      "FILL_AREA_STYLE_COLOUR": 1,
+      "COLOUR_RGB": 1,
+      "MECHANICAL_DESIGN_GEOMETRIC_PRESENTATION_REPRESENTATION": 1
+    },
+    "styled_item_targets": {
+      "STYLED_ITEM": {
+        "MANIFOLD_SOLID_BREP": 1
+      }
+    },
+    "distinct_colours": [
+      [
+        0.1,
+        0.7,
+        0.2
+      ]
+    ],
+    "faces": 6,
+    "solids": 1,
+    "occurrences": 0,
+    "ok": true
+  },
+  {
+    "case": "common_pbr",
+    "ap": "AP214",
+    "description": "VisMaterialCommon + VisMaterialPBR (no ColorTool colour)",
+    "file": "common_pbr_ap214.step",
+    "schema": "AUTOMOTIVE_DESIGN { 1 0 10303 214 1 1 1 1 }",
+    "total_entities": 359,
+    "presentation_counts": {
+      "STYLED_ITEM": 1,
+      "PRESENTATION_STYLE_ASSIGNMENT": 1,
+      "SURFACE_STYLE_USAGE": 1,
+      "SURFACE_SIDE_STYLE": 1,
+      "SURFACE_STYLE_FILL_AREA": 1,
+      "FILL_AREA_STYLE": 1,
+      "FILL_AREA_STYLE_COLOUR": 1,
+      "COLOUR_RGB": 1,
+      "MECHANICAL_DESIGN_GEOMETRIC_PRESENTATION_REPRESENTATION": 1
+    },
+    "styled_item_targets": {
+      "STYLED_ITEM": {
+        "MANIFOLD_SOLID_BREP": 1
+      }
+    },
+    "distinct_colours": [
+      [
+        0.1,
+        0.2,
+        0.9
+      ]
+    ],
+    "faces": 6,
+    "solids": 1,
+    "occurrences": 0,
+    "ok": true
+  },
+  {
+    "case": "common_pbr",
+    "ap": "AP242",
+    "description": "VisMaterialCommon + VisMaterialPBR (no ColorTool colour)",
+    "file": "common_pbr_ap242.step",
+    "schema": "AP242_MANAGED_MODEL_BASED_3D_ENGINEERING_MIM_LF {1 0 10303 442 1 1 4 }",
+    "total_entities": 359,
+    "presentation_counts": {
+      "STYLED_ITEM": 1,
+      "PRESENTATION_STYLE_ASSIGNMENT": 1,
+      "SURFACE_STYLE_USAGE": 1,
+      "SURFACE_SIDE_STYLE": 1,
+      "SURFACE_STYLE_FILL_AREA": 1,
+      "FILL_AREA_STYLE": 1,
+      "FILL_AREA_STYLE_COLOUR": 1,
+      "COLOUR_RGB": 1,
+      "MECHANICAL_DESIGN_GEOMETRIC_PRESENTATION_REPRESENTATION": 1
+    },
+    "styled_item_targets": {
+      "STYLED_ITEM": {
+        "MANIFOLD_SOLID_BREP": 1
+      }
+    },
+    "distinct_colours": [
+      [
+        0.1,
+        0.2,
+        0.9
+      ]
+    ],
+    "faces": 6,
+    "solids": 1,
+    "occurrences": 0,
+    "ok": true
+  }
+]

@@ -1,0 +1,67 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>8.0</LangVersion>
+    <UseWindowsForms>true</UseWindowsForms>
+    <PlatformTarget>x64</PlatformTarget>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AssemblyName>Peak.NextStep</AssemblyName>
+    <RootNamespace>Peak.NextStep</RootNamespace>
+    <!-- COM-visible add-in: RegAsm needs the type library information. -->
+    <ComVisible>false</ComVisible>
+    <NoWarn>$(NoWarn);CS0618</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      The export engine is shared with the spike harness rather than copied, so
+      the code proven end-to-end in evidence/S6 is literally the code that ships.
+    -->
+    <Compile Include="..\..\tools\Peak.StepSpike.Harvest\Core\Part21.cs" Link="Core\Part21.cs" />
+    <Compile Include="..\..\tools\Peak.StepSpike.Harvest\Core\AppearanceLadder.cs" Link="Core\AppearanceLadder.cs" />
+    <Compile Include="..\..\tools\Peak.StepSpike.Harvest\Core\StepRewriter.cs" Link="Core\StepRewriter.cs" />
+    <Compile Include="..\..\tools\Peak.StepSpike.Harvest\Core\OccurrenceMatcher.cs" Link="Core\OccurrenceMatcher.cs" />
+    <Compile Include="..\..\tools\Peak.StepSpike.Harvest\Core\DeInstancer.cs" Link="Core\DeInstancer.cs" />
+    <Compile Include="..\..\tools\Peak.StepSpike.Harvest\Core\MaterialWriter.cs" Link="Core\MaterialWriter.cs" />
+    <Compile Include="..\..\tools\Peak.StepSpike.Harvest\Core\MaterialHarvester.cs" Link="Core\MaterialHarvester.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      SW2022 interops with Private=True. Per the warning in Peak.Release.csproj:
+      the interops are strong-named, there are no GAC copies and SolidWorks has
+      no binding redirects, so on SW2024+ the v30 references can ONLY be
+      satisfied by copies sitting next to the add-in DLL. The AssemblyResolve
+      hook in AddIn.cs is a fallback only: it cannot rescue the swpublished
+      bind that happens while the AddIn type itself loads.
+    -->
+    <Reference Include="SolidWorks.Interop.sldworks">
+      <HintPath>C:\Program Files\SOLIDWORKS 2022\SOLIDWORKS\api\redist\SolidWorks.Interop.sldworks.dll</HintPath>
+      <Private>True</Private>
+      <SpecificVersion>False</SpecificVersion>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="SolidWorks.Interop.swconst">
+      <HintPath>C:\Program Files\SOLIDWORKS 2022\SOLIDWORKS\api\redist\SolidWorks.Interop.swconst.dll</HintPath>
+      <Private>True</Private>
+      <SpecificVersion>False</SpecificVersion>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="SolidWorks.Interop.swpublished">
+      <HintPath>C:\Program Files\SOLIDWORKS 2022\SOLIDWORKS\api\redist\SolidWorks.Interop.swpublished.dll</HintPath>
+      <Private>True</Private>
+      <SpecificVersion>False</SpecificVersion>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+    </Reference>
+  </ItemGroup>
+
+</Project>

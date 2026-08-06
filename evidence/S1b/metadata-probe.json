@@ -1,0 +1,142 @@
+{
+  "eng_material_AP214": {
+    "PROPERTY_DEFINITION": [
+      "('material property','material name',#5)",
+      "('material property','density',#5)"
+    ],
+    "PROPERTY_DEFINITION_REPRESENTATION": [
+      "(#360,#351)",
+      "(#362,#358)"
+    ],
+    "DESCRIPTIVE_REPRESENTATION_ITEM": [
+      "('Aluminium 6061-T6',\n  'Aluminium alloy, solution heat treated')"
+    ],
+    "MEASURE_REPRESENTATION_ITEM": [
+      "('kg/m^3',2.7E+03,#353)"
+    ]
+  },
+  "eng_material_AP242": {
+    "PROPERTY_DEFINITION": [
+      "('material property','material name',#5)",
+      "('material property','density',#5)"
+    ],
+    "PROPERTY_DEFINITION_REPRESENTATION": [
+      "(#360,#351)",
+      "(#362,#358)"
+    ],
+    "DESCRIPTIVE_REPRESENTATION_ITEM": [
+      "('Aluminium 6061-T6',\n  'Aluminium alloy, solution heat treated')"
+    ],
+    "MEASURE_REPRESENTATION_ITEM": [
+      "('kg/m^3',2.7E+03,#353)"
+    ]
+  },
+  "custom_props": {
+    "product_definitions": 2,
+    "entities_added": 32,
+    "properties_per_product": 4
+  },
+  "blender_eng_material AP214": {
+    "operator": [
+      "FINISHED"
+    ],
+    "objects": [
+      {
+        "name": "SOLID",
+        "custom_props": {
+          "STEP_tag": "1",
+          "STEP_parent": "0",
+          "STEP_uuid": "1",
+          "STEP_file": "C:\\PeakDesign\\NEXT-STEP-SW\\evidence\\S1b\\eng_material_ap214.step",
+          "STEP_name": "SOLID",
+          "STEP_tree_location": "1",
+          "STEP_applied_scale": "0.001",
+          "STEP_import_settings": "{\"lin_deflection\": 1.0, \"ang_deflection\": 0.8, \"uv_mode\": \"SURFACE\", \"uv_normalize\": false, \"uv_split_closed\": true, \"box_uv_scale\": 1.0, \"unit_scale\": 0.001, \"eng_materials\": true}",
+          "STEP_material": "Aluminium 6061-T6",
+          "STEP_material_desc": "Aluminium alloy, solution heat treated",
+          "STEP_material_density": "2700.0",
+          "STEP_materials": "[\"Aluminium 6061-T6\"]"
+        },
+        "mesh_props": {},
+        "materials": [
+          "Aluminium 6061-T6"
+        ]
+      }
+    ]
+  },
+  "blender_eng_material AP242": {
+    "operator": [
+      "FINISHED"
+    ],
+    "objects": [
+      {
+        "name": "SOLID",
+        "custom_props": {
+          "STEP_tag": "1",
+          "STEP_parent": "0",
+          "STEP_uuid": "1",
+          "STEP_file": "C:\\PeakDesign\\NEXT-STEP-SW\\evidence\\S1b\\eng_material_ap242.step",
+          "STEP_name": "SOLID",
+          "STEP_tree_location": "1",
+          "STEP_applied_scale": "0.001",
+          "STEP_import_settings": "{\"lin_deflection\": 1.0, \"ang_deflection\": 0.8, \"uv_mode\": \"SURFACE\", \"uv_normalize\": false, \"uv_split_closed\": true, \"box_uv_scale\": 1.0, \"unit_scale\": 0.001, \"eng_materials\": true}",
+          "STEP_material": "Aluminium 6061-T6",
+          "STEP_material_desc": "Aluminium alloy, solution heat treated",
+          "STEP_material_density": "2700.0",
+          "STEP_materials": "[\"Aluminium 6061-T6\"]"
+        },
+        "mesh_props": {},
+        "materials": [
+          "Aluminium 6061-T6"
+        ]
+      }
+    ]
+  },
+  "blender_custom_props AP214": {
+    "operator": [
+      "FINISHED"
+    ],
+    "objects": [
+      {
+        "name": "SOLID",
+        "custom_props": {
+          "STEP_tag": "2",
+          "STEP_parent": "1",
+          "STEP_uuid": "2",
+          "STEP_file": "C:\\PeakDesign\\NEXT-STEP-SW\\evidence\\S1b\\custom_props_ap214.step",
+          "STEP_name": "SOLID",
+          "STEP_tree_location": "2",
+          "STEP_applied_scale": "0.001",
+          "STEP_import_settings": "{\"lin_deflection\": 1.0, \"ang_deflection\": 0.8, \"uv_mode\": \"SURFACE\", \"uv_normalize\": false, \"uv_split_closed\": true, \"box_uv_scale\": 1.0, \"unit_scale\": 0.001, \"eng_materials\": true}",
+          "STEP_material": "FinishSpec",
+          "STEP_material_desc": "Anodised, matt black",
+          "STEP_materials": "[\"FinishSpec\"]"
+        },
+        "mesh_props": {},
+        "materials": [
+          "FinishSpec"
+        ]
+      },
+      {
+        "name": "SOLID.001",
+        "custom_props": {
+          "STEP_tag": "2",
+          "STEP_parent": "1",
+          "STEP_uuid": "3",
+          "STEP_file": "C:\\PeakDesign\\NEXT-STEP-SW\\evidence\\S1b\\custom_props_ap214.step",
+          "STEP_name": "SOLID",
+          "STEP_tree_location": "3",
+          "STEP_applied_scale": "0.001",
+          "STEP_import_settings": "{\"lin_deflection\": 1.0, \"ang_deflection\": 0.8, \"uv_mode\": \"SURFACE\", \"uv_normalize\": false, \"uv_split_closed\": true, \"box_uv_scale\": 1.0, \"unit_scale\": 0.001, \"eng_materials\": true}",
+          "STEP_material": "FinishSpec",
+          "STEP_material_desc": "Anodised, matt black",
+          "STEP_materials": "[\"FinishSpec\"]"
+        },
+        "mesh_props": {},
+        "materials": [
+          "FinishSpec"
+        ]
+      }
+    ]
+  }
+}

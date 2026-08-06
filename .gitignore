@@ -1,0 +1,28 @@
+# Build output
+bin/
+obj/
+.vs/
+*.user
+*.suo
+
+# Spike scratch
+out/
+
+# Corpus models are large and proprietary; CORPUS.md describes how to rebuild
+corpus/*.sldprt
+corpus/*.SLDPRT
+corpus/*.sldasm
+corpus/*.SLDASM
+
+# Evidence: keep the small analysis artifacts, keep STEP/glTF probes too (they
+# are the citations FINDINGS.md rests on and are only a few hundred KB).
+# Large native exports from real assemblies do not belong in git:
+evidence/**/C6_*.step
+evidence/**/*.stp
+
+# Python
+__pycache__/
+*.pyc
+
+# Local Claude settings
+.claude/settings.local.json

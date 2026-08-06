@@ -1,0 +1,20 @@
+{
+  "gltf_materials": [
+    {
+      "name": "mat_0",
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [
+          0.010022825561463833,
+          0.03310476616024971,
+          0.7874122858047485,
+          1.0
+        ],
+        "metallicFactor": 0.8999999761581421,
+        "roughnessFactor": 0.15000000596046448
+      },
+      "doubleSided": true
+    }
+  ],
+  "step_has_pbr": false,
+  "gltf_has_pbr": true
+}
