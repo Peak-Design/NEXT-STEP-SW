@@ -31,19 +31,9 @@
     </PackageReference>
   </ItemGroup>
 
-  <ItemGroup>
-    <!--
-      The export engine is shared with the spike harness rather than copied, so
-      the code proven end-to-end in evidence/S6 is literally the code that ships.
-    -->
-    <Compile Include="..\..\tools\Peak.StepSpike.Harvest\Core\Part21.cs" Link="Core\Part21.cs" />
-    <Compile Include="..\..\tools\Peak.StepSpike.Harvest\Core\AppearanceLadder.cs" Link="Core\AppearanceLadder.cs" />
-    <Compile Include="..\..\tools\Peak.StepSpike.Harvest\Core\StepRewriter.cs" Link="Core\StepRewriter.cs" />
-    <Compile Include="..\..\tools\Peak.StepSpike.Harvest\Core\OccurrenceMatcher.cs" Link="Core\OccurrenceMatcher.cs" />
-    <Compile Include="..\..\tools\Peak.StepSpike.Harvest\Core\DeInstancer.cs" Link="Core\DeInstancer.cs" />
-    <Compile Include="..\..\tools\Peak.StepSpike.Harvest\Core\MaterialWriter.cs" Link="Core\MaterialWriter.cs" />
-    <Compile Include="..\..\tools\Peak.StepSpike.Harvest\Core\MaterialHarvester.cs" Link="Core\MaterialHarvester.cs" />
-  </ItemGroup>
+  <!-- The export engine lives in Core\ inside this project. The spike harness
+       in tools\ links the same files, so the code tested there is the code
+       that ships. -->
 
   <ItemGroup>
     <!--

@@ -12,25 +12,15 @@ dist/
 # Runtime logs written beside the add-in
 *.log
 
-# Spike scratch
-out/
-
-# Corpus models are large and proprietary; CORPUS.md describes how to rebuild
-corpus/*.sldprt
-corpus/*.SLDPRT
-corpus/*.sldasm
-corpus/*.SLDASM
-
-# Ad-hoc STEP exports made while testing against the corpus. The STEP files
-# that are evidence live in evidence/ and are tracked; these are throwaway.
-corpus/*.step
-corpus/*.STEP
-
-# Evidence: keep the small analysis artifacts, keep STEP/glTF probes too (they
-# are the citations FINDINGS.md rests on and are only a few hundred KB).
-# Large native exports from real assemblies do not belong in git:
-evidence/**/C6_*.step
-evidence/**/*.stp
+# Development material that stays on the dev machine. The public repository
+# holds the add-in, the installer and the release script, nothing else.
+/PLAN.md
+/corpus/
+/evidence/
+/spikes/
+/out/
+/tools/Peak.StepSpike.Harvest/
+/tools/*.py
 
 # Python
 __pycache__/
