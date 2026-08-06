@@ -62,9 +62,9 @@ SolidWorks 2022 to 2026, 64-bit. NEXT-STEP needs .NET Framework 4.8. Windows
 separate parts, so every reader shows the right colour. Instances that share a
 colour stay instances, and cost no extra geometry.
 
-Turn it off to keep every instance shared. The file is smaller, but only readers
-that support per-instance colour show it correctly. Most do not, including
-Fusion 360.
+Turn de-instancing off to keep every instance shared. The file is smaller, but
+only readers that support per-instance colour show the right colours. Most do
+not, including Fusion 360.
 
 **Include hidden components (default off).** Off, hidden components stay out of
 the file. On, they are exported with everything else. Suppressed components are
@@ -74,8 +74,8 @@ never exported.
 
 With de-instancing on, the names are numbered per colour: `Plain Carbon Steel`,
 `Plain Carbon Steel.001`, and so on. Readers that group by material name then
-keep the colours apart. Note that the numbered name is what any tool reading the
-material will report, so leave this off if the material name matters downstream.
+keep the colours apart. Any tool that reads the material reports the numbered
+name, so turn de-instancing off to keep the exact material names.
 
 ## Known limits
 

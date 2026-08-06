@@ -78,7 +78,7 @@ namespace Peak.NextStep
                 + "every reader shows the right colour. Instances that share a colour "
                 + "stay instances.\n"
                 + "Off: every instance stays shared and the file is smaller, but only "
-                + "readers that support per-instance colour show it correctly.",
+                + "readers that support per-instance colour show the right colours.",
                 SystemColors.GrayText);
             deInstanceHelp.Margin = new Padding(20, 0, 0, 12);
 
@@ -88,8 +88,8 @@ namespace Peak.NextStep
                 "Writes the material name and density, which SolidWorks does not "
                 + "export.\n"
                 + "With de-instancing on, the names are numbered per colour, such as "
-                + "\"Plain Carbon Steel.001\". Leave this off if the material name "
-                + "matters downstream.",
+                + "\"Plain Carbon Steel.001\". Turn de-instancing off to keep the exact "
+                + "material names.",
                 SystemColors.GrayText);
             materialHelp.Margin = new Padding(20, 0, 0, 12);
 
