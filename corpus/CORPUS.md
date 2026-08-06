@@ -14,7 +14,7 @@ justified by**; S0's premise check runs on it.
 | **C4** | `C4_component_override_1.sldasm` | 2 instances of `C4_part_1` (red at part level, same as C1). One instance overridden orange, the other yellow. | S0, S3, S4, S6 |
 | | `C4_component_override_2.sldasm` | As above, **plus a green assembly-level override** on top. | S0, S3, S4, S6 |
 | **C5** | `C5_display_states` | 2 configurations with linked display states. Part-level overrides only, no assembly appearance. Config "1": one instance orange, one yellow. Config "2": one green, one cyan. | S0, S3 |
-| **C6** | `SS65_02_00_00.SLDASM` | `C:\Dropbox\Projects\01 - Projects\Ezystak\01 - SS80 Redesign\04 - 3D Model\2022 Redesign\Solid Model\02-FEEDER CONVEYOR\00-FINAL ASSEMBLY\` | S3, S4, S6 |
+| **C6** | `C6_large` | A large in-house assembly, more than 50k faces. Not in the repository. | S3, S4, S6 |
 | **C7** | `C7_periodic` | 5 bodies: red cylinder **with** a split cylindrical face, orange cylinder **without** a split periodic face, yellow cone, green torus, cyan sphere. | S0, S4 |
 | **C8** | `C8_decal` | As C1, plus a barcode decal on the cylindrical face. | S3 |
 
