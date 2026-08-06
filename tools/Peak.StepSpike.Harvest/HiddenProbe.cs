@@ -123,7 +123,7 @@ namespace Peak.StepSpike.Harvest
                      $"file has {refs.Count} occurrence(s)");
 
             var pairs = new OccurrenceMatcher(model, m => Log.Info("      " + m))
-                        .Match(occurrences, refs);
+                        .Match(occurrences, rw);
             foreach (var p in pairs)
                 Log.Info($"      {p.Key.Path,-20} -> " +
                          (p.Value == null ? "UNMATCHED" : "NAUO #" + p.Value.NauoId));

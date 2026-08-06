@@ -13,6 +13,19 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **Nested assemblies now work.** The first release matched components as a
+  flat list, so on a multi-level assembly almost every component failed to
+  match and kept the wrong colour. The matcher now walks the assembly tree,
+  level by level, the way the STEP file stores it.
+- An override on a sub-assembly now reaches every part below it, at any depth.
+  Overrides made inside a sub-assembly document are found too.
+- A component below a hidden or suppressed component is now excluded with its
+  parent, instead of producing a false "unmatched" warning.
+- Multibody parts: every body of an overridden part takes the colour, not just
+  the first.
+- Two uses of one shared sub-assembly that need different colours cannot both
+  be right without a structural copy. The export now reports this case and
+  leaves those parts alone, instead of colouring them wrongly.
 - The export report no longer warns that hidden and suppressed components could
   not be matched. They are absent from the file by design.
 

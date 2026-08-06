@@ -41,59 +41,96 @@ namespace Peak.NextStep.Core
         /// </summary>
         public Dictionary<int, int> BucketIndexByProduct { get; } = new Dictionary<int, int>();
 
+        /// <summary>One NEXT_ASSEMBLY_USAGE_OCCURRENCE: one use of a product
+        /// inside its parent assembly.</summary>
         public sealed class OccurrenceRef
         {
             public int NauoId;
-            /// <summary>The position of this occurrence, in file units.</summary>
+            /// <summary>The position of this occurrence in the frame of its
+            /// PARENT assembly, in file units. STEP placements are parent
+            /// relative. The root-relative position of a nested occurrence
+            /// appears nowhere in the file.</summary>
             public double[] Translation;
-            /// <summary>The geometric item that the styling of this occurrence
-            /// must point at.</summary>
-            public int TargetItemId;
-            public int BaseStyledItemId;
+            public int ParentPd;
+            public int ChildPd;
+            /// <summary>The PRODUCT name of the child. SolidWorks builds it
+            /// from the file name, plus the configuration name for a
+            /// non-default configuration.</summary>
+            public string ProductName;
+            /// <summary>The solids of the child product, when the child is a
+            /// part. Empty for a sub-assembly.</summary>
+            public List<int> TargetItems = new List<int>();
+            /// <summary>The first solid, for the occurrence styling path.</summary>
+            public int TargetItemId => TargetItems.Count > 0 ? TargetItems[0] : 0;
+            public int BaseStyledItemId = -1;
         }
 
+        public int RootPd { get; private set; } = -1;
+
+        /// <summary>The uses inside each assembly product definition. A shared
+        /// sub-assembly definition appears once here, whatever the number of
+        /// uses above it.</summary>
+        public Dictionary<int, List<OccurrenceRef>> ChildrenByParentPd { get; }
+            = new Dictionary<int, List<OccurrenceRef>>();
+
         /// <summary>
-        /// Finds every occurrence and its position. For the identity, this walks
-        /// CONTEXT_DEPENDENT_SHAPE_REPRESENTATION to product_definition_shape to
-        /// NAUO. For the position, it walks item_defined_transformation to
-        /// axis2_placement_3d to cartesian_point.
+        /// Finds every occurrence: its parent and child products, and its
+        /// position within the parent. For the position, this walks the
+        /// CONTEXT_DEPENDENT_SHAPE_REPRESENTATION of the occurrence to
+        /// item_defined_transformation to axis2_placement_3d.
         /// </summary>
         public List<OccurrenceRef> FindOccurrences()
         {
             var result = new List<OccurrenceRef>();
-            var styledByItem = new Dictionary<int, int>();
-            foreach (var sid in _step.ByType("STYLED_ITEM"))
+            var byNauo = new Dictionary<int, OccurrenceRef>();
+
+            foreach (var nauo in _step.ByType("NEXT_ASSEMBLY_USAGE_OCCURRENCE"))
             {
-                foreach (var r in _step.Refs(sid))
+                var pds = _step.Refs(nauo)
+                               .Where(r => _step.TypeOf(r) == "PRODUCT_DEFINITION").ToList();
+                if (pds.Count < 2) continue;
+
+                // NAUO(id, name, description, relating, related): the relating
+                // product definition is the assembly, the related one the child.
+                var occ = new OccurrenceRef
                 {
-                    var t = _step.TypeOf(r);
-                    if (t == "MANIFOLD_SOLID_BREP" || t == "ADVANCED_BREP_SHAPE_REPRESENTATION"
-                        || t == "SHELL_BASED_SURFACE_MODEL" || t == "BREP_WITH_VOIDS")
-                        styledByItem[r] = sid;
-                }
+                    NauoId = nauo,
+                    ParentPd = pds[0],
+                    ChildPd = pds[pds.Count - 1],
+                };
+                occ.ProductName = _step.NameOf(ProductOf(occ.ChildPd));
+                result.Add(occ);
+                byNauo[nauo] = occ;
+
+                if (!ChildrenByParentPd.TryGetValue(occ.ParentPd, out var list))
+                    ChildrenByParentPd[occ.ParentPd] = list = new List<OccurrenceRef>();
+                list.Add(occ);
             }
 
             foreach (var cdsr in _step.ByType("CONTEXT_DEPENDENT_SHAPE_REPRESENTATION"))
             {
-                int nauo = FindReachable(cdsr, "NEXT_ASSEMBLY_USAGE_OCCURRENCE", 4);
-                if (nauo < 0) continue;
+                int pds = _step.Refs(cdsr).FirstOrDefault(
+                    r => _step.TypeOf(r) == "PRODUCT_DEFINITION_SHAPE");
+                int nauo = pds == 0 ? 0 : _step.Refs(pds).FirstOrDefault(
+                    r => _step.TypeOf(r) == "NEXT_ASSEMBLY_USAGE_OCCURRENCE");
+                if (nauo != 0 && byNauo.TryGetValue(nauo, out var occ))
+                    occ.Translation = ReadOccurrencePlacement(cdsr);
+            }
 
-                double[] xyz = ReadOccurrencePlacement(cdsr);
+            // The root is the assembly that no occurrence uses as a child.
+            var children = new HashSet<int>(result.Select(o => o.ChildPd));
+            RootPd = ChildrenByParentPd.Keys.FirstOrDefault(p => !children.Contains(p));
+            if (RootPd == 0) RootPd = -1;
 
-                // Point at the solid that the assembly shares. If no styled
-                // item names a solid, use the shape representation.
-                int target = styledByItem.Keys.FirstOrDefault(
-                    k => _step.TypeOf(k) == "MANIFOLD_SOLID_BREP");
-                if (target == 0)
-                    target = styledByItem.Keys.FirstOrDefault();
-
-                result.Add(new OccurrenceRef
-                {
-                    NauoId = nauo,
-                    Translation = xyz,
-                    TargetItemId = target,
-                    BaseStyledItemId = styledByItem.TryGetValue(target, out var b) ? b : -1,
-                });
+            // The solids of each part, resolved once per child product.
+            var targets = new Dictionary<int, KeyValuePair<List<int>, int>>();
+            foreach (var occ in result)
+            {
+                if (ChildrenByParentPd.ContainsKey(occ.ChildPd)) continue;  // sub-assembly
+                if (!targets.TryGetValue(occ.ChildPd, out var t))
+                    targets[occ.ChildPd] = t = ResolvePartTarget(occ.ChildPd);
+                occ.TargetItems = t.Key;
+                occ.BaseStyledItemId = t.Value;
             }
 
             result.Sort((a, b) => a.NauoId.CompareTo(b.NauoId));
@@ -101,13 +138,110 @@ namespace Peak.NextStep.Core
         }
 
         /// <summary>
-        /// Reads the position of this occurrence in the assembly.
+        /// The solids of one part product, and the styled item on the first of
+        /// them. The walk goes product_definition to product_definition_shape
+        /// to shape_definition_representation to shape_representation, then
+        /// over shape_representation_relationship to the B-rep.
+        /// </summary>
+        private KeyValuePair<List<int>, int> ResolvePartTarget(int childPd)
+        {
+            var solids = new List<int>();
+            int styled = -1;
+
+            int pds = FirstReferrer("PRODUCT_DEFINITION_SHAPE", childPd);
+            int sdr = pds == 0 ? 0 : FirstReferrer("SHAPE_DEFINITION_REPRESENTATION", pds);
+            int sr = sdr == 0 ? 0 : _step.Refs(sdr).FirstOrDefault(
+                r => _step.TypeOf(r) == "SHAPE_REPRESENTATION"
+                  || r == RepWithBrep(r));
+            if (sr == 0) return new KeyValuePair<List<int>, int>(solids, styled);
+
+            var brepReps = new List<int>();
+            if (RepWithBrep(sr) == sr) brepReps.Add(sr);
+            foreach (var srr in Referrers("SHAPE_REPRESENTATION_RELATIONSHIP", sr))
+                foreach (var r in _step.Refs(srr))
+                    if (r != sr && RepWithBrep(r) == r) brepReps.Add(r);
+
+            foreach (var rep in brepReps)
+                foreach (var item in _step.Refs(rep))
+                {
+                    var t = _step.TypeOf(item);
+                    if (t == "MANIFOLD_SOLID_BREP" || t == "SHELL_BASED_SURFACE_MODEL"
+                     || t == "BREP_WITH_VOIDS")
+                        solids.Add(item);
+                }
+
+            if (solids.Count > 0)
+            {
+                var owners = StyledByItem();
+                foreach (var s in solids)
+                    if (owners.TryGetValue(s, out var st)) { styled = st; break; }
+            }
+            return new KeyValuePair<List<int>, int>(solids, styled);
+        }
+
+        private int RepWithBrep(int id)
+        {
+            var t = _step.TypeOf(id);
+            return (t == "ADVANCED_BREP_SHAPE_REPRESENTATION"
+                 || t == "MANIFOLD_SURFACE_SHAPE_REPRESENTATION") ? id : 0;
+        }
+
+        // ── reverse lookup, built once ──────────────────────────────────────
+
+        private Dictionary<int, List<int>> _referrers;
+
+        private void BuildReferrers(string type)
+        {
+            foreach (var id in _step.ByType(type))
+                foreach (var r in _step.Refs(id))
+                {
+                    if (!_referrers.TryGetValue(r, out var list))
+                        _referrers[r] = list = new List<int>();
+                    list.Add(id);
+                }
+        }
+
+        private List<int> Referrers(string type, int target)
+        {
+            if (_referrers == null)
+            {
+                _referrers = new Dictionary<int, List<int>>();
+                BuildReferrers("PRODUCT_DEFINITION_SHAPE");
+                BuildReferrers("SHAPE_DEFINITION_REPRESENTATION");
+                BuildReferrers("SHAPE_REPRESENTATION_RELATIONSHIP");
+            }
+            if (!_referrers.TryGetValue(target, out var all)) return new List<int>();
+            return all.Where(i => _step.TypeOf(i) == type).ToList();
+        }
+
+        private int FirstReferrer(string type, int target)
+            => Referrers(type, target).FirstOrDefault();
+
+        private Dictionary<int, int> _styledByItem;
+
+        private Dictionary<int, int> StyledByItem()
+        {
+            if (_styledByItem != null) return _styledByItem;
+            _styledByItem = new Dictionary<int, int>();
+            foreach (var sid in _step.ByType("STYLED_ITEM"))
+                foreach (var r in _step.Refs(sid))
+                {
+                    var t = _step.TypeOf(r);
+                    if (t == "MANIFOLD_SOLID_BREP" || t == "ADVANCED_BREP_SHAPE_REPRESENTATION"
+                        || t == "SHELL_BASED_SURFACE_MODEL" || t == "BREP_WITH_VOIDS")
+                        if (!_styledByItem.ContainsKey(r)) _styledByItem[r] = sid;
+                }
+            return _styledByItem;
+        }
+
+        /// <summary>
+        /// Reads the position of this occurrence in the frame of its parent.
         ///
         /// This code follows an exact chain. A breadth-first search does not
         /// work here:
         ///     CDSR -> (representation_relationship_with_transformation)
         ///          -> ITEM_DEFINED_TRANSFORMATION(name, desc, item_1, item_2)
-        /// Here item_1 is the position in ASSEMBLY space, which identifies the
+        /// Here item_1 is the position in PARENT space, which identifies the
         /// occurrence. item_2 is the origin of the part itself, and every
         /// occurrence SHARES it. A breadth-first search finds the point of
         /// item_2 just as easily, and then reports every occurrence at the
@@ -145,29 +279,6 @@ namespace Peak.NextStep.Core
                 }
             }
             return null;
-        }
-
-        /// <summary>Breadth-first search for the nearest entity of a type.</summary>
-        private int FindReachable(int start, string type, int maxDepth)
-        {
-            var seen = new HashSet<int> { start };
-            var frontier = new List<int> { start };
-            for (int depth = 0; depth < maxDepth && frontier.Count > 0; depth++)
-            {
-                var next = new List<int>();
-                foreach (var id in frontier)
-                {
-                    foreach (var r in _step.Refs(id))
-                    {
-                        if (!seen.Add(r)) continue;
-                        if (string.Equals(_step.TypeOf(r), type, StringComparison.OrdinalIgnoreCase))
-                            return r;
-                        next.Add(r);
-                    }
-                }
-                frontier = next;
-            }
-            return -1;
         }
 
         private double[] ReadTriple(int cartesianPointId)
@@ -237,6 +348,10 @@ namespace Peak.NextStep.Core
         /// <summary>
         /// Applies the resolved appearance to every matched occurrence.
         ///
+        /// Only the leaves take styling. An override on a sub-assembly reaches
+        /// this method already cascaded onto every part below it by
+        /// AppearanceLadder.
+        ///
         /// deInstance=false keeps the instancing of SolidWorks and writes
         /// CONTEXT_DEPENDENT_OVER_RIDING_STYLED_ITEM. That output is compact and
         /// correct under ISO 10303-46. But Fusion 360 and STEPper NEXT ignore it.
@@ -252,8 +367,34 @@ namespace Peak.NextStep.Core
         public int ApplyOccurrenceColours(
             List<KeyValuePair<OccurrenceAppearance, OccurrenceRef>> pairs, bool deInstance)
         {
+            // A shared sub-assembly definition holds ONE set of occurrence
+            // entities, however many times the definition is used. Several
+            // component paths therefore land on the same NAUO. When they agree
+            // on the appearance, one write serves them all. When they disagree,
+            // the file cannot show both without a copy of the whole
+            // sub-assembly structure, which this code does not make yet. Those
+            // occurrences keep the SolidWorks colour, and the log names them.
+            var leaves = pairs.Where(p => p.Value != null && p.Key.Children.Count == 0).ToList();
+
+            var byNauo = new List<KeyValuePair<OccurrenceAppearance, OccurrenceRef>>();
+            foreach (var group in leaves.GroupBy(p => p.Value.NauoId))
+            {
+                var signatures = group
+                    .Select(p => p.Key.OverridesPartInternals ? AppearanceKey(p.Key) : "original")
+                    .Distinct().ToList();
+                if (signatures.Count > 1)
+                {
+                    _log?.Invoke($"    CONFLICT: {string.Join(" / ", group.Select(p => p.Key.Path))} "
+                               + "share one sub-assembly definition but need different colours; "
+                               + "they keep the SolidWorks colour");
+                    continue;
+                }
+                var lead = group.FirstOrDefault(p => p.Key.OverridesPartInternals);
+                byNauo.Add(lead.Key != null ? lead : group.First());
+            }
+
             int applied = 0;
-            var matched = pairs.Where(p => p.Value != null).ToList();
+            var matched = byNauo;
             if (!matched.Any(p => p.Key.OverridesPartInternals)) return 0;
 
             if (!deInstance)
@@ -268,7 +409,7 @@ namespace Peak.NextStep.Core
 
             var di = new DeInstancer(_step, _log);
 
-            foreach (var partGroup in matched.GroupBy(p => PartProductOf(p.Value.NauoId)))
+            foreach (var partGroup in matched.GroupBy(p => p.Value.ChildPd))
             {
                 // An occurrence with no override must keep the part exactly as
                 // SolidWorks wrote it, including the colour of each face. If any
@@ -282,6 +423,7 @@ namespace Peak.NextStep.Core
                     .Where(p => p.Key.OverridesPartInternals)
                     .GroupBy(p => AppearanceKey(p.Key))
                     .ToList();
+                if (buckets.Count == 0) continue;
 
                 int originalProduct = ProductOf(partGroup.Key);
                 int bucketIndex = sharedGeometryTaken ? 1 : 0;
@@ -298,8 +440,9 @@ namespace Peak.NextStep.Core
                     {
                         sharedGeometryTaken = true;
                         int repointed = di.RecolourPart(lead.Value, lead.Key.Colour, lead.Key.Transparency);
-                        if (repointed == 0 && lead.Value.TargetItemId > 0)
-                            di.AddPlainStyle(lead.Value.TargetItemId, lead.Key.Colour, lead.Key.Transparency);
+                        if (repointed == 0 && lead.Value.TargetItems.Count > 0)
+                            foreach (var solid in lead.Value.TargetItems)
+                                di.AddPlainStyle(solid, lead.Key.Colour, lead.Key.Transparency);
                         // The shared geometry is group 0, recorded above. It
                         // still uses an index. The next group is a copy and must
                         // have the number 1, not 0. With the number 0 its
@@ -314,7 +457,7 @@ namespace Peak.NextStep.Core
                     }
 
                     var copy = di.ClonePart(lead.Value);
-                    if (copy == null || copy.SolidId < 0)
+                    if (copy == null || copy.SolidIds.Count == 0)
                     {
                         _log?.Invoke($"    {who}: de-instancing FAILED, falling back to " +
                                      "occurrence styling");
@@ -326,7 +469,8 @@ namespace Peak.NextStep.Core
                         continue;
                     }
 
-                    di.AddPlainStyle(copy.SolidId, lead.Key.Colour, lead.Key.Transparency);
+                    foreach (var solid in copy.SolidIds)
+                        di.AddPlainStyle(solid, lead.Key.Colour, lead.Key.Transparency);
                     foreach (var p in bucket) di.PointOccurrenceAt(p.Value, copy);
 
                     if (originalProduct > 0 && copy.Map.TryGetValue(originalProduct, out int clonedProduct))
@@ -334,7 +478,8 @@ namespace Peak.NextStep.Core
                     bucketIndex++;
 
                     _log?.Invoke($"    {who}: {n} occurrence(s) share one copy " +
-                                 $"({copy.EntityCount} entities), solid #{copy.SolidId} = {lead.Key.Colour}");
+                                 $"({copy.EntityCount} entities), {copy.SolidIds.Count} solid(s) " +
+                                 $"= {lead.Key.Colour}");
                     applied += n;
                 }
             }
@@ -349,14 +494,6 @@ namespace Peak.NextStep.Core
         private static string AppearanceKey(OccurrenceAppearance a)
             => string.Format(CultureInfo.InvariantCulture, "{0:F3}/{1:F3}/{2:F3}/{3:F3}",
                              a.Colour.R, a.Colour.G, a.Colour.B, a.Transparency);
-
-        private int PartProductOf(int nauoId)
-        {
-            var refs = _step.Refs(nauoId);
-            for (int i = refs.Count - 1; i >= 0; i--)
-                if (_step.TypeOf(refs[i]) == "PRODUCT_DEFINITION") return refs[i];
-            return -1;
-        }
 
         /// <summary>Walks PRODUCT_DEFINITION to formation to PRODUCT.</summary>
         private int ProductOf(int productDefinition)

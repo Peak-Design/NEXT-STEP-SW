@@ -86,10 +86,10 @@ namespace Peak.StepSpike.Harvest
                          $" target=#{r.TargetItemId} base=#{r.BaseStyledItemId}");
 
             if (refs.Count != occurrences.Count)
-                Log.Info($"  WARNING: {occurrences.Count} components but {refs.Count} " +
-                         "occurrences in file -- mapping is not 1:1, colours may be wrong");
+                Log.Info($"  note: {occurrences.Count} components and {refs.Count} " +
+                         "occurrences in the file (shared definitions make these differ)");
 
-            var matched = new OccurrenceMatcher(model, m => Log.Info(m)).Match(occurrences, refs);
+            var matched = new OccurrenceMatcher(model, m => Log.Info(m)).Match(occurrences, rw);
             int applied = rw.ApplyOccurrenceColours(matched, DeInstance);
 
             if (Materials)

@@ -39,8 +39,9 @@ namespace Peak.NextStep.Core
             /// <summary>Maps an original id to a copied id, to point the
             /// occurrences at the copy.</summary>
             public Dictionary<int, int> Map;
-            /// <summary>The copied solid that holds the colour, or -1.</summary>
-            public int SolidId;
+            /// <summary>The copied solids that take the colour. A part with
+            /// several bodies has several.</summary>
+            public List<int> SolidIds = new List<int>();
             public int EntityCount;
         }
 
@@ -169,12 +170,16 @@ namespace Peak.NextStep.Core
 
             var map = CloneAll(toClone);
 
-            // The copied solid takes the colour of the copy.
-            int solid = toClone.FirstOrDefault(i => _step.TypeOf(i) == "MANIFOLD_SOLID_BREP");
+            // The copied solids take the colour of the copy.
+            var solids = toClone
+                .Where(i => _step.TypeOf(i) == "MANIFOLD_SOLID_BREP"
+                         || _step.TypeOf(i) == "SHELL_BASED_SURFACE_MODEL"
+                         || _step.TypeOf(i) == "BREP_WITH_VOIDS")
+                .Select(i => map[i]).ToList();
             return new PartCopy
             {
                 Map = map,
-                SolidId = solid == 0 ? -1 : map[solid],
+                SolidIds = solids,
                 EntityCount = toClone.Count,
             };
         }

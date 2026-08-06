@@ -75,6 +75,16 @@ Example:
                         S6Export.Materials = Array.IndexOf(args, "--materials") >= 0;
                         return S6Export.Run(corpus, s6Out, visible, Arg(args, "--only", null));
                     }
+                    case "fix":
+                    {
+                        string fOut = Arg(args, "--out", Path.Combine(root, "evidence", "S9"));
+                        Directory.CreateDirectory(fOut);
+                        Log.Init(Path.Combine(fOut, "fix.log"));
+                        return FixVerb.Run(fOut,
+                            Array.IndexOf(args, "--no-deinstance") < 0,
+                            Array.IndexOf(args, "--materials") >= 0,
+                            Arg(args, "--model", null));
+                    }
                     case "hidden":
                     {
                         string hOut = Arg(args, "--out", Path.Combine(root, "evidence", "S8"));

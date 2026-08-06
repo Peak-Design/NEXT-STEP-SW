@@ -132,20 +132,16 @@ namespace Peak.NextStep
             // correctly.
             if (model is IAssemblyDoc)
             {
-                var occurrences = AppearanceLadder.Resolve(model, AddIn.Log);
-
-                // SolidWorks wrote every component that this code revealed, so
-                // the matcher must treat those components as present. The ladder
-                // runs after the code hides them again.
-                if (includeHidden)
-                    foreach (var o in occurrences)
-                        if (o.ExcludedBecause == "hidden") { o.Exported = true; o.ExcludedBecause = null; }
+                // The ladder knows which components the export revealed: with
+                // includeHidden, a hidden component counts as exported, and only
+                // suppression and envelopes still exclude.
+                var occurrences = AppearanceLadder.Resolve(model, AddIn.Log, includeHidden);
 
                 int skipped = occurrences.Count(o => !o.Exported);
                 if (skipped > 0)
                     notes.Add($"{skipped} component(s) hidden or suppressed, and not exported.");
 
-                int needFixing = occurrences.Count(o => o.OverridesPartInternals);
+                int needFixing = occurrences.Count(o => o.Exported && o.OverridesPartInternals);
                 if (needFixing == 0)
                 {
                     notes.Add($"{occurrences.Count} component(s). None carries an "
@@ -153,12 +149,13 @@ namespace Peak.NextStep
                 }
                 else
                 {
+                    rw.FindOccurrences();
                     var pairs = new OccurrenceMatcher(model, AddIn.Log)
-                        .Match(occurrences, rw.FindOccurrences());
+                        .Match(occurrences, rw);
                     unmatched = pairs.Count(p => p.Key.OverridesPartInternals && p.Value == null);
                     applied = rw.ApplyOccurrenceColours(pairs, deInstance);
-                    notes.Add($"{occurrences.Count} component(s). Restored {applied} "
-                            + "appearance(s) "
+                    notes.Add($"{occurrences.Count} component(s), {needFixing} with an "
+                            + $"override. Restored {applied} appearance(s) "
                             + (deInstance ? "(de-instanced)." : "(instancing kept)."));
                 }
             }
