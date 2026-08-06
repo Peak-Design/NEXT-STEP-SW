@@ -29,9 +29,11 @@ namespace Peak.NextStep
     {
         private readonly CheckBox _deInstance;
         private readonly CheckBox _engineeringMaterial;
+        private readonly CheckBox _includeHidden;
 
         public bool DeInstance => _deInstance.Checked;
         public bool EngineeringMaterial => _engineeringMaterial.Checked;
+        public bool IncludeHidden => _includeHidden.Checked;
 
         /// <summary>Wrap width for prose.</summary>
         private const int TextWidth = 470;
@@ -40,7 +42,8 @@ namespace Peak.NextStep
         // appearance into one material per CAD material when it is present,
         // which hides the colour work this add-in exists to do.
         public ExportOptionsDialog(bool deInstanceDefault = true,
-                                   bool engineeringMaterialDefault = false)
+                                   bool engineeringMaterialDefault = false,
+                                   bool includeHiddenDefault = false)
         {
             Text = "Export STEP+";
             FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -90,7 +93,17 @@ namespace Peak.NextStep
                 + "variant of the name, so readers that build one material per name keep "
                 + "the colours apart.",
                 SystemColors.GrayText);
-            materialHelp.Margin = new Padding(20, 0, 0, 14);
+            materialHelp.Margin = new Padding(20, 0, 0, 12);
+
+            _includeHidden = Check("Include hidden components", includeHiddenDefault);
+            var hiddenHelp = Prose(
+                "SolidWorks leaves hidden components out of a STEP file. On, they are "
+                + "shown for the duration of the export and hidden again afterwards, so "
+                + "they are written like any other component.\n"
+                + "Suppressed components are never exported either way, because resolving "
+                + "one would rebuild the assembly.",
+                SystemColors.GrayText);
+            hiddenHelp.Margin = new Padding(20, 0, 0, 14);
 
             var buttons = new FlowLayoutPanel
             {
@@ -111,6 +124,8 @@ namespace Peak.NextStep
             root.Controls.Add(deInstanceHelp);
             root.Controls.Add(_engineeringMaterial);
             root.Controls.Add(materialHelp);
+            root.Controls.Add(_includeHidden);
+            root.Controls.Add(hiddenHelp);
             root.Controls.Add(buttons);
             Controls.Add(root);
 
@@ -158,10 +173,12 @@ namespace Peak.NextStep
         /// command, so it centres on SolidWorks and behaves as a modal child of
         /// it rather than a stray top-level window. Returns false on cancel.
         /// </summary>
-        public static bool Show(out bool deInstance, out bool engineeringMaterial)
+        public static bool Show(out bool deInstance, out bool engineeringMaterial,
+                                out bool includeHidden)
         {
             deInstance = false;
             engineeringMaterial = false;
+            includeHidden = false;
 
             IWin32Window owner = null;
             try
@@ -177,6 +194,7 @@ namespace Peak.NextStep
                 if (result != DialogResult.OK) return false;
                 deInstance = dlg.DeInstance;
                 engineeringMaterial = dlg.EngineeringMaterial;
+                includeHidden = dlg.IncludeHidden;
                 return true;
             }
         }

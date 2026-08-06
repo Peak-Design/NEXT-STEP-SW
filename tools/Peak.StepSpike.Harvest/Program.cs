@@ -75,6 +75,13 @@ Example:
                         S6Export.Materials = Array.IndexOf(args, "--materials") >= 0;
                         return S6Export.Run(corpus, s6Out, visible, Arg(args, "--only", null));
                     }
+                    case "hidden":
+                    {
+                        string hOut = Arg(args, "--out", Path.Combine(root, "evidence", "S8"));
+                        Directory.CreateDirectory(hOut);
+                        Log.Init(Path.Combine(hOut, "hidden.log"));
+                        return HiddenProbe.Run(corpus, hOut, visible, Arg(args, "--only", null));
+                    }
                     case "harvest":
                     {
                         int maxFaces = int.Parse(Arg(args, "--maxfaces", "400"));

@@ -6,6 +6,21 @@ Notable changes to NEXT-STEP. Format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Include hidden components** option (default off). SolidWorks omits hidden
+  components from a STEP file and exposes no preference for it — it asks
+  interactively, and the silent export the add-in uses answers that prompt.
+  Switching this on shows hidden components for the duration of the export and
+  hides them again afterwards. Suppressed components are still never exported:
+  resolving one would rebuild the assembly.
+
+### Fixed
+
+- Hidden and suppressed components are no longer reported as failing to match
+  the STEP file. They are absent from it by design, so the warning was a false
+  alarm on every export of an assembly with anything hidden.
+
 ## [0.1.0] - 2026-08-06
 
 First release.

@@ -42,12 +42,25 @@ namespace Peak.NextStep.Core
                 .OfType<IComponent2>().ToList();
             var used = new HashSet<int>();
 
-            if (refs.Count != occurrences.Count)
-                _log?.Invoke($"  WARNING: {occurrences.Count} component(s) but {refs.Count} " +
+            // Components SolidWorks did not write have no occurrence to find.
+            // Counting them here would warn that the mapping is not 1:1 on
+            // every export of an assembly with anything hidden, and then
+            // report each one as unmatched -- two false alarms for correct
+            // behaviour, which is how a real warning gets ignored.
+            var expected = occurrences.Where(o => o.Exported).ToList();
+            int excluded = occurrences.Count - expected.Count;
+            if (excluded > 0)
+                _log?.Invoke($"  {excluded} component(s) hidden or suppressed, so absent from " +
+                             "the file by design; not matched");
+
+            if (refs.Count != expected.Count)
+                _log?.Invoke($"  WARNING: {expected.Count} exported component(s) but {refs.Count} " +
                              "occurrence(s) in the STEP file; mapping is not 1:1");
 
             foreach (var occ in occurrences)
             {
+                if (!occ.Exported) { pairs.Add(Pair(occ, null)); continue; }
+
                 var comp = comps.FirstOrDefault(c => c.Name2 == occ.Path);
                 double[] want = TranslationMm(comp);
 

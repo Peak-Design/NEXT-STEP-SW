@@ -35,6 +35,15 @@ namespace Peak.NextStep.Core
         /// <summary>True when the winner came from above the part, so it must
         /// override the part's own face/body/feature styling in the STEP.</summary>
         public bool OverridesPartInternals;
+        /// <summary>
+        /// False when SolidWorks will not write this occurrence at all --
+        /// hidden or suppressed. Measured, not assumed: a silent SaveAs3 omits
+        /// both (evidence/S8/hidden.log). Such a component has no occurrence to
+        /// match, so reporting it as unmatched would be a false alarm.
+        /// </summary>
+        public bool Exported = true;
+        /// <summary>hidden | suppressed, when Exported is false.</summary>
+        public string ExcludedBecause;
     }
 
     /// <summary>
@@ -103,6 +112,9 @@ namespace Peak.NextStep.Core
                     ReferencedConfiguration = comp.ReferencedConfiguration,
                 };
 
+                occ.ExcludedBecause = ExclusionReason(comp);
+                occ.Exported = occ.ExcludedBecause == null;
+
                 if (topOverride != null)
                 {
                     // Highest level wins, for every occurrence beneath it.
@@ -140,10 +152,42 @@ namespace Peak.NextStep.Core
 
                 results.Add(occ);
                 log?.Invoke($"    {occ.Path,-24} {occ.WinningScope,-10} {occ.Colour} " +
-                            $"overridesPart={occ.OverridesPartInternals}");
+                            $"overridesPart={occ.OverridesPartInternals}" +
+                            (occ.Exported ? "" : $" EXCLUDED ({occ.ExcludedBecause})"));
             }
 
             return results;
+        }
+
+        /// <summary>
+        /// Why SolidWorks will leave this component out of the STEP file, or
+        /// null if it will be written.
+        ///
+        /// Both cases were measured rather than assumed: a silent SaveAs3 drops
+        /// hidden components as well as suppressed ones, on every corpus
+        /// assembly and with swStepExportAppearances both on and off
+        /// (evidence/S8/hidden.log). There is no preference behind this --
+        /// SolidWorks prompts about it interactively and
+        /// swSaveAsOptions_Silent answers the prompt for us.
+        /// </summary>
+        public static string ExclusionReason(IComponent2 comp)
+        {
+            try
+            {
+                int suppression = comp.GetSuppression2();
+                if (suppression == (int)swComponentSuppressionState_e.swComponentSuppressed)
+                    return "suppressed";
+            }
+            catch { }
+
+            try
+            {
+                if (comp.Visible == (int)swComponentVisibilityState_e.swComponentHidden)
+                    return "hidden";
+            }
+            catch { }
+
+            return null;
         }
 
         private static List<ScopedAppearance> HarvestScoped(IModelDocExtension ext, Action<string> log)

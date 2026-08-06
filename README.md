@@ -78,6 +78,13 @@ colour is written as `CONTEXT_DEPENDENT_OVER_RIDING_STYLED_ITEM`, the ISO
 readers that do not implement occurrence styling fall back to the part's own
 colour — which today is most of them.
 
+**Include hidden components (default off).** SolidWorks leaves hidden
+components out of a STEP file and offers no setting for it — it asks
+interactively, and a silent export answers that prompt. On, hidden components
+are shown for the duration of the export and hidden again afterwards.
+Suppressed components are never exported either way, because resolving one
+would rebuild the assembly.
+
 **Engineering material (default off).** Writes material name and density. With
 de-instancing on, each distinct appearance gets its own numbered variant of the
 material name (`Plain Carbon Steel`, `Plain Carbon Steel.001`), so a reader that
