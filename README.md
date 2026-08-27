@@ -74,7 +74,7 @@ components.
 
 **Export only the selected components (default off).** The option becomes
 available when you select one or more components. A selected assembly brings
-every component inside it. The assemblies above the selection stay in the file.
+every component inside it. Each part stays in its place in the assembly tree.
 A face or an edge that you select counts as its component.
 
 Isolate does not limit the export. To export a part of the assembly, select the

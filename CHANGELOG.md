@@ -11,7 +11,7 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Export only the selected components** option, off by default. The option
   becomes available when you select one or more components.
   - A selected assembly brings every component inside it.
-  - The assemblies above the selection stay in the file.
+  - Each part stays in its place in the assembly tree.
   - A face or an edge that you select counts as its component.
 - The export report gives the number of components that the selection left out.
 

@@ -108,8 +108,8 @@ namespace Peak.NextStep
             var selectedHelp = Prose(
                 selectedCount > 0
                       ? $"{selectedCount} component(s) selected. A selected assembly "
-                        + "brings every component inside it. The assemblies above "
-                        + "the selection stay in the file.\n"
+                        + "brings every component inside it. Each part stays in "
+                        + "its place in the assembly tree.\n"
                         + "Isolate does not limit the export. Select the "
                         + "components instead."
                       : "Nothing is selected. Close this dialog, select the "
