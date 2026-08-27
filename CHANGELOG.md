@@ -8,32 +8,17 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- **Export only the selected components** option, off by default and offered
-  only when something is selected — an export that silently wrote an empty
-  file would be the worst outcome here. The set is wider than what was
-  clicked, in both directions, and both are needed: everything INSIDE a
-  selected assembly comes with it, and every assembly ABOVE the selection
-  stays visible, because SolidWorks omits the whole branch below a hidden
-  node and trimming an ancestor would take the selection with it. A face or
-  edge picked in the graphics area counts as its component.
+- **Export only the selected components** option, off by default. The option
+  becomes available when you select one or more components.
+  - A selected assembly brings every component inside it.
+  - The assemblies above the selection stay in the file.
+  - A face or an edge that you select counts as its component.
+- The export report gives the number of components that the selection left out.
 
-  The appearance ladder is told the same set, so it no longer tries to repair
-  occurrences that are not in the file and report them as unmatched.
+### Fixed
 
-  This is also the answer for **Isolate**, which the add-in cannot follow on
-  its own: `swIsolateVisibility_e` defaults to WIREFRAME, so isolated-out
-  components remain `swComponentVisible` and SolidWorks exports them, and
-  `IAssemblyDoc` has no query for whether Isolate is even active — it exposes
-  only Isolate, ExitIsolate, SaveIsolate and SetIsolateVisibility. The dialog
-  now says so where the choice is made.
-
-### Changed
-
-- Visibility for an export is now decided in ONE pass and restored from what
-  actually changed. Revealing hidden components and hiding unselected ones act
-  on the same property, and a component that is both was touched by two passes
-  with two undo lists — the order the restores ran in decided whether the user
-  got their assembly back.
+- The add-in puts back the visibility of every component that it changed for
+  the export.
 
 ## [0.2.0] - 2026-08-06
 

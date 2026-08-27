@@ -36,8 +36,8 @@ export they all share one colour, so every instance after the first is wrong.
 SolidWorks writes neither.
 
 **Geometry is untouched.** NEXT-STEP changes only colour and material. The
-geometry in the file is the SolidWorks geometry, byte for byte. Nothing is
-re-toleranced or healed, and no PMI is lost.
+geometry in the file is the SolidWorks geometry, byte for byte. NEXT-STEP does
+not re-tolerance the geometry, does not heal it, and does not remove PMI.
 
 ## Install
 
@@ -62,31 +62,29 @@ SolidWorks 2022 to 2026, 64-bit. NEXT-STEP needs .NET Framework 4.8. Windows
 ## The export options
 
 **De-instance (default on).** Instances that need different colours become
-separate parts, so every reader shows the right colour. Instances that share a
-colour stay instances, and cost no extra geometry.
+separate parts. Instances that share a colour stay instances, and use no extra
+geometry.
 
-Turn de-instancing off to keep every instance shared. The file is smaller, but
-only readers that support per-instance colour show the right colours. Most do
-not, including Fusion 360.
+Turn de-instancing off to keep every instance shared. The file is then smaller.
+Only readers that support per-instance colour show the correct colours. Most
+readers do not, including Fusion 360.
 
-**Include hidden components (default off).** Suppressed components are never
-exported.
+**Include hidden components (default off).** NEXT-STEP never exports suppressed
+components.
 
-**Export only the selected components (default off).** Available when something
-is selected. Everything inside a selected assembly comes with it, and the
-assemblies above it stay in the file so that the branch survives. A face picked
-in the graphics area counts as its component.
+**Export only the selected components (default off).** The option becomes
+available when you select one or more components. A selected assembly brings
+every component inside it. The assemblies above the selection stay in the file.
+A face or an edge that you select counts as its component.
 
-SOLIDWORKS Isolate does not carry over to the export. Unless you set its display
-to Hidden, isolated-out components stay visible and go into the file. Select the
-components you want instead.
+Isolate does not limit the export. To export a part of the assembly, select the
+components and use this option.
 
 **Engineering material (default off).** Writes the material name and density.
 
-With de-instancing on, the names are numbered per colour: `Plain Carbon Steel`,
-`Plain Carbon Steel.001`, and so on. Readers that group by material name then
-keep the colours apart. Any tool that reads the material reports the numbered
-name, so turn de-instancing off to keep the exact material names.
+With de-instancing on, NEXT-STEP numbers the material names for each colour,
+such as `Plain Carbon Steel` and `Plain Carbon Steel.001`. To keep the exact
+material names, turn de-instancing off.
 
 ## Known limits
 
@@ -108,8 +106,8 @@ src\Peak.NextStep\Register-Addin.bat
 
 ## Support
 
-[Peak Design](https://github.com/Peak-Design) — current maintainer. Tips
-welcome:
+[Peak Design](https://github.com/Peak-Design) is the current maintainer.
+Tips are welcome:
 
 [![Support me on Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/oskarasspalvys)
 

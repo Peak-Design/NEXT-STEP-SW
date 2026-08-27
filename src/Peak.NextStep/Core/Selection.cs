@@ -32,7 +32,7 @@ namespace Peak.NextStep.Core
     {
         /// <summary>
         /// The names of the components to keep, or null when nothing in the
-        /// model is selected. Null means "no restriction" — every caller
+        /// model is selected. Null means "no restriction". Every caller
         /// treats it as "keep everything", so an empty selection can never
         /// silently produce an empty file.
         /// </summary>

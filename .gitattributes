@@ -7,7 +7,7 @@
 *.ps1 text eol=crlf
 
 # Part 21 is a text format, but these files are byte-for-byte evidence:
-# normalising their line endings would change the bytes FINDINGS.md cites.
+# normalising their line endings would change the bytes of the evidence.
 *.step -text
 *.stp  -text
 *.STEP -text

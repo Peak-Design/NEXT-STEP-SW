@@ -70,35 +70,34 @@ namespace Peak.NextStep
 
             var intro = Prose(
                 "SolidWorks drops component and assembly appearance overrides when it "
-                + "writes STEP. This addon puts them back.",
+                + "writes STEP. This add-in puts them back.",
                 SystemColors.ControlText);
             intro.Margin = new Padding(0, 0, 0, 10);
 
             _deInstance = Check("De-instance components that carry an override",
                                 deInstanceDefault);
             var deInstanceHelp = Prose(
-                "On: instances that need different colours become separate parts, so "
-                + "every reader shows the right colour. Instances that share a colour "
-                + "stay instances.\n"
-                + "Off: every instance stays shared and the file is smaller, but only "
-                + "readers that support per-instance colour show the right colours.",
+                "On: instances that need different colours become separate parts. "
+                + "Instances that share a colour stay instances.\n"
+                + "Off: every instance stays shared and the file is smaller. Only "
+                + "readers that support per-instance colour then show the correct "
+                + "colours.",
                 SystemColors.GrayText);
             deInstanceHelp.Margin = new Padding(20, 0, 0, 12);
 
             _engineeringMaterial = Check("Include engineering material (name and density)",
                                          engineeringMaterialDefault);
             var materialHelp = Prose(
-                "Writes the material name and density, which SolidWorks does not "
-                + "export.\n"
-                + "With de-instancing on, the names are numbered per colour, such as "
-                + "\"Plain Carbon Steel.001\". Turn de-instancing off to keep the exact "
-                + "material names.",
+                "Writes the material name and density.\n"
+                + "With de-instancing on, the add-in numbers the material names for "
+                + "each colour, such as \"Plain Carbon Steel.001\". To keep the "
+                + "exact material names, turn de-instancing off.",
                 SystemColors.GrayText);
             materialHelp.Margin = new Padding(20, 0, 0, 12);
 
             _includeHidden = Check("Include hidden components", includeHiddenDefault);
             var hiddenHelp = Prose(
-                "Suppressed components are never exported.",
+                "The add-in never exports suppressed components.",
                 SystemColors.GrayText);
             hiddenHelp.Margin = new Padding(20, 0, 0, 12);
 
@@ -108,15 +107,13 @@ namespace Peak.NextStep
             _onlySelected.Enabled = selectedCount > 0;
             var selectedHelp = Prose(
                 selectedCount > 0
-                    ? $"{selectedCount} selected. Everything inside a selected "
-                      + "assembly comes with it, and the assemblies above it stay "
-                      + "in the file so that the branch survives.\n"
-                      + "SOLIDWORKS Isolate does not follow from this: unless its "
-                      + "display is set to Hidden, isolated-out components stay "
-                      + "visible and would be exported. Select what you want "
-                      + "instead."
-                    : "Nothing is selected. Close this, pick the components or "
-                      + "assemblies to export, and run the command again.",
+                      ? $"{selectedCount} component(s) selected. A selected assembly "
+                        + "brings every component inside it. The assemblies above "
+                        + "the selection stay in the file.\n"
+                        + "Isolate does not limit the export. Select the "
+                        + "components instead."
+                      : "Nothing is selected. Close this dialog, select the "
+                        + "components to export, and start the command again.",
                 SystemColors.GrayText);
             selectedHelp.Margin = new Padding(20, 0, 0, 14);
 

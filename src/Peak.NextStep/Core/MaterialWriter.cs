@@ -29,7 +29,7 @@ namespace Peak.NextStep.Core
     ///       -> REPRESENTATION -> MEASURE_REPRESENTATION_ITEM('density', value, #kgPerM3)
     ///
     /// AP242 is NOT necessary for this. The output is the same in AP214 and in
-    /// AP242, so no MBD licence applies. See FINDINGS.md 3b.1.
+    /// AP242, so no MBD licence applies.
     /// </summary>
     public sealed class MaterialWriter
     {

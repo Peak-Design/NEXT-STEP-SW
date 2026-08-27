@@ -14,7 +14,7 @@ namespace Peak.NextStep
     /// class then adds the appearance that SolidWorks loses.
     ///
     /// SolidWorks exports the colour of each face and each body correctly. This
-    /// was measured. See FINDINGS.md section 2.2. This class therefore does not
+    /// was measured. This class therefore does not
     /// change that styling.
     ///
     /// SolidWorks flattens the overrides at component and assembly level. It
@@ -154,16 +154,16 @@ namespace Peak.NextStep
                     o => !o.Exported && o.ExcludedBecause == AppearanceLadder.NotSelected);
                 int skipped = occurrences.Count(o => !o.Exported) - unselected;
                 if (skipped > 0)
-                    notes.Add($"{skipped} component(s) hidden or suppressed, and not exported.");
+                    notes.Add($"Did not export {skipped} hidden or suppressed component(s).");
                 if (unselected > 0)
-                    notes.Add($"{unselected} component(s) outside the selection, "
-                            + "and not exported.");
+                    notes.Add($"Did not export {unselected} component(s) outside the "
+                            + "selection.");
 
                 int needFixing = occurrences.Count(o => o.Exported && o.OverridesPartInternals);
                 if (needFixing == 0)
                 {
-                    notes.Add($"{occurrences.Count} component(s). None carries an "
-                            + "override, so no appearance needed repair.");
+                    notes.Add($"{occurrences.Count} component(s). No component carries "
+                            + "an override.");
                 }
                 else
                 {
@@ -179,7 +179,7 @@ namespace Peak.NextStep
             }
             else
             {
-                notes.Add("Part document. No appearance needed repair.");
+                notes.Add("Part document. No override to restore.");
             }
 
             // ── 3. Engineering material, which SolidWorks never exports ─────
@@ -206,8 +206,8 @@ namespace Peak.NextStep
 
             string msg = $"Exported {Path.GetFileName(target)}.\n\n" + string.Join("\n", notes);
             if (unmatched > 0)
-                msg += $"\n\nWARNING: {unmatched} occurrence(s) could not be matched, and "
-                     + "keep the SolidWorks colour. See nextstep-debug.log.";
+                msg += $"\n\nWARNING: Could not match {unmatched} occurrence(s). "
+                     + "They keep the SolidWorks colour. See nextstep-debug.log.";
             return msg;
         }
 

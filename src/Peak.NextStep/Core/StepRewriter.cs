@@ -355,7 +355,7 @@ namespace Peak.NextStep.Core
         /// deInstance=false keeps the instancing of SolidWorks and writes
         /// CONTEXT_DEPENDENT_OVER_RIDING_STYLED_ITEM. That output is compact and
         /// correct under ISO 10303-46. But Fusion 360 and STEPper NEXT ignore it.
-        /// This was measured. See FINDINGS.md 4.3.
+        /// This was measured.
         ///
         /// deInstance=true separates the occurrences by APPEARANCE, not one by
         /// one. For each part, this code groups the occurrences by the colour
