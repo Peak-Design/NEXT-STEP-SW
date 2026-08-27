@@ -30,10 +30,12 @@ namespace Peak.NextStep
         private readonly CheckBox _deInstance;
         private readonly CheckBox _engineeringMaterial;
         private readonly CheckBox _includeHidden;
+        private readonly CheckBox _onlySelected;
 
         public bool DeInstance => _deInstance.Checked;
         public bool EngineeringMaterial => _engineeringMaterial.Checked;
         public bool IncludeHidden => _includeHidden.Checked;
+        public bool OnlySelected => _onlySelected.Enabled && _onlySelected.Checked;
 
         /// <summary>Wrap width for prose.</summary>
         private const int TextWidth = 470;
@@ -41,7 +43,8 @@ namespace Peak.NextStep
         // Engineering material is OFF by default. Some importers merge every
         // appearance into one material for each CAD material when the file
         // holds one. That hides the colour work this add-in exists to do.
-        public ExportOptionsDialog(bool deInstanceDefault = true,
+        public ExportOptionsDialog(int selectedCount = 0,
+                                   bool deInstanceDefault = true,
                                    bool engineeringMaterialDefault = false,
                                    bool includeHiddenDefault = false)
         {
@@ -97,7 +100,25 @@ namespace Peak.NextStep
             var hiddenHelp = Prose(
                 "Suppressed components are never exported.",
                 SystemColors.GrayText);
-            hiddenHelp.Margin = new Padding(20, 0, 0, 14);
+            hiddenHelp.Margin = new Padding(20, 0, 0, 12);
+
+            // Off by default and disabled without a selection: an export that
+            // silently wrote an empty file would be the worst outcome here.
+            _onlySelected = Check("Export only the selected components", false);
+            _onlySelected.Enabled = selectedCount > 0;
+            var selectedHelp = Prose(
+                selectedCount > 0
+                    ? $"{selectedCount} selected. Everything inside a selected "
+                      + "assembly comes with it, and the assemblies above it stay "
+                      + "in the file so that the branch survives.\n"
+                      + "SOLIDWORKS Isolate does not follow from this: unless its "
+                      + "display is set to Hidden, isolated-out components stay "
+                      + "visible and would be exported. Select what you want "
+                      + "instead."
+                    : "Nothing is selected. Close this, pick the components or "
+                      + "assemblies to export, and run the command again.",
+                SystemColors.GrayText);
+            selectedHelp.Margin = new Padding(20, 0, 0, 14);
 
             var buttons = new FlowLayoutPanel
             {
@@ -120,6 +141,8 @@ namespace Peak.NextStep
             root.Controls.Add(materialHelp);
             root.Controls.Add(_includeHidden);
             root.Controls.Add(hiddenHelp);
+            root.Controls.Add(_onlySelected);
+            root.Controls.Add(selectedHelp);
             root.Controls.Add(buttons);
             Controls.Add(root);
 
@@ -168,12 +191,14 @@ namespace Peak.NextStep
         /// modal child of it, not as a separate top level window. Returns false
         /// if the user cancels.
         /// </summary>
-        public static bool Show(out bool deInstance, out bool engineeringMaterial,
-                                out bool includeHidden)
+        public static bool Show(int selectedCount, out bool deInstance,
+                                out bool engineeringMaterial,
+                                out bool includeHidden, out bool onlySelected)
         {
             deInstance = false;
             engineeringMaterial = false;
             includeHidden = false;
+            onlySelected = false;
 
             IWin32Window owner = null;
             try
@@ -183,13 +208,14 @@ namespace Peak.NextStep
             }
             catch (Exception ex) { AddIn.Log("owner window unavailable: " + ex.Message); }
 
-            using (var dlg = new ExportOptionsDialog())
+            using (var dlg = new ExportOptionsDialog(selectedCount))
             {
                 var result = owner == null ? dlg.ShowDialog() : dlg.ShowDialog(owner);
                 if (result != DialogResult.OK) return false;
                 deInstance = dlg.DeInstance;
                 engineeringMaterial = dlg.EngineeringMaterial;
                 includeHidden = dlg.IncludeHidden;
+                onlySelected = dlg.OnlySelected;
                 return true;
             }
         }

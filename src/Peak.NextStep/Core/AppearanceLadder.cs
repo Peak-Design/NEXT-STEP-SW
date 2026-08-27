@@ -108,8 +108,22 @@ namespace Peak.NextStep.Core
             public string Source;
         }
 
+        /// <summary>The exclusion reason for a component an "only the
+        /// selected ones" export leaves out. Named, because ExportCommand
+        /// counts these separately from hidden and suppressed ones and a typo
+        /// would silently report zero.</summary>
+        public const string NotSelected = "not selected";
+
+        /// <summary>
+        /// keep: the component names an "only the selected ones" export is
+        /// keeping, or null for no restriction. The ladder must exclude
+        /// exactly what the export excluded, or it tries to repair the
+        /// appearance of occurrences that are not in the file and reports them
+        /// as unmatched.
+        /// </summary>
         public static List<OccurrenceAppearance> Resolve(IModelDoc2 model, Action<string> log,
-                                                         bool includeHidden = false)
+                                                         bool includeHidden = false,
+                                                         HashSet<string> keep = null)
         {
             var results = new List<OccurrenceAppearance>();
             if (!(model is IAssemblyDoc))
@@ -125,7 +139,7 @@ namespace Peak.NextStep.Core
             log?.Invoke($"    {results.Count} occurrence(s), {roots.Count} at the top level");
 
             // ── 2. Exclusion, inherited down the tree ───────────────────────
-            foreach (var r in roots) MarkExcluded(r, null, includeHidden);
+            foreach (var r in roots) MarkExcluded(r, null, includeHidden, keep);
             int excluded = results.Count(o => !o.Exported);
             if (excluded > 0)
             {
@@ -233,15 +247,26 @@ namespace Peak.NextStep.Core
         // ── exclusion ───────────────────────────────────────────────────────
 
         private static void MarkExcluded(OccurrenceAppearance n, string inherited,
-                                         bool includeHidden)
+                                         bool includeHidden, HashSet<string> keep)
         {
             string own = ExclusionReason(n.Comp);
             if (includeHidden && own == "hidden") own = null;   // the export reveals them
+            // The keep set already holds every ancestor of every selection, so
+            // a component outside it has nothing selected below it either and
+            // the whole branch goes.
+            if (own == null && keep != null && !InKeep(n.Comp, keep))
+                own = NotSelected;
             string effective = inherited ?? own;
 
             n.ExcludedBecause = effective;
             n.Exported = effective == null;
-            foreach (var c in n.Children) MarkExcluded(c, effective, includeHidden);
+            foreach (var c in n.Children) MarkExcluded(c, effective, includeHidden, keep);
+        }
+
+        private static bool InKeep(IComponent2 comp, HashSet<string> keep)
+        {
+            try { return keep.Contains(comp.Name2 ?? ""); }
+            catch { return true; }    // unreadable name: keep, never drop silently
         }
 
         /// <summary>

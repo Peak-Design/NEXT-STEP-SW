@@ -4,6 +4,37 @@ The notable changes to NEXT-STEP. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The version numbers
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Export only the selected components** option, off by default and offered
+  only when something is selected — an export that silently wrote an empty
+  file would be the worst outcome here. The set is wider than what was
+  clicked, in both directions, and both are needed: everything INSIDE a
+  selected assembly comes with it, and every assembly ABOVE the selection
+  stays visible, because SolidWorks omits the whole branch below a hidden
+  node and trimming an ancestor would take the selection with it. A face or
+  edge picked in the graphics area counts as its component.
+
+  The appearance ladder is told the same set, so it no longer tries to repair
+  occurrences that are not in the file and report them as unmatched.
+
+  This is also the answer for **Isolate**, which the add-in cannot follow on
+  its own: `swIsolateVisibility_e` defaults to WIREFRAME, so isolated-out
+  components remain `swComponentVisible` and SolidWorks exports them, and
+  `IAssemblyDoc` has no query for whether Isolate is even active — it exposes
+  only Isolate, ExitIsolate, SaveIsolate and SetIsolateVisibility. The dialog
+  now says so where the choice is made.
+
+### Changed
+
+- Visibility for an export is now decided in ONE pass and restored from what
+  actually changed. Revealing hidden components and hiding unselected ones act
+  on the same property, and a component that is both was touched by two passes
+  with two undo lists — the order the restores ran in decided whether the user
+  got their assembly back.
+
 ## [0.2.0] - 2026-08-06
 
 ### Added

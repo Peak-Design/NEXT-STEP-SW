@@ -45,8 +45,14 @@ namespace Peak.NextStep
                 return;
             }
 
-            bool deInstance, includeMaterial, includeHidden;
-            if (!ExportOptionsDialog.Show(out deInstance, out includeMaterial, out includeHidden))
+            // Counted before the dialog opens, because the dialog cannot
+            // offer "only the selected ones" when nothing is selected - the
+            // option would silently export an empty file.
+            int selected = Core.Selection.Count(model);
+
+            bool deInstance, includeMaterial, includeHidden, onlySelected;
+            if (!ExportOptionsDialog.Show(selected, out deInstance, out includeMaterial,
+                                          out includeHidden, out onlySelected))
                 return;
 
             string target;
@@ -65,7 +71,8 @@ namespace Peak.NextStep
 
             try
             {
-                var report = Export(app, model, target, deInstance, includeMaterial, includeHidden);
+                var report = Export(app, model, target, deInstance, includeMaterial,
+                                    includeHidden, onlySelected);
                 app.SendMsgToUser2(report, (int)swMessageBoxIcon_e.swMbInformation,
                                    (int)swMessageBoxBtn_e.swMbOk);
             }
@@ -79,8 +86,14 @@ namespace Peak.NextStep
 
         public static string Export(ISldWorks app, IModelDoc2 model, string target,
                                     bool deInstance, bool includeMaterial,
-                                    bool includeHidden = false)
+                                    bool includeHidden = false,
+                                    bool onlySelected = false)
         {
+            // Null means no restriction. Selection.KeepSet returns null when
+            // nothing is selected, so an empty selection exports everything
+            // rather than nothing.
+            var keep = onlySelected ? Core.Selection.KeepSet(model, AddIn.Log) : null;
+
             // ── 1. The SolidWorks export ────────────────────────────────────
             // These preferences apply to the whole application. This code saves
             // them before the export and puts them back afterwards. The
@@ -92,14 +105,14 @@ namespace Peak.NextStep
 
             bool ok;
             int errors = 0, warnings = 0;
-            var revealed = new List<IComponent2>();
+            var restore = new List<KeyValuePair<IComponent2, int>>();
             try
             {
                 app.SetUserPreferenceIntegerValue((int)swUserPreferenceIntegerValue_e.swStepAP, 214);
                 if (appearancesAvailable)
                     app.SetUserPreferenceToggle(StepPrefs.ExportAppearances, true);
 
-                if (includeHidden) revealed.AddRange(RevealHidden(model));
+                restore.AddRange(ApplyVisibility(model, includeHidden, keep));
 
                 ok = model.Extension.SaveAs3(
                     target, (int)swSaveAsVersion_e.swSaveAsCurrentVersion,
@@ -108,7 +121,7 @@ namespace Peak.NextStep
             }
             finally
             {
-                Rehide(revealed);
+                RestoreVisibility(restore);
                 try { app.SetUserPreferenceIntegerValue((int)swUserPreferenceIntegerValue_e.swStepAP, savedAp); }
                 catch (Exception ex) { AddIn.Log("restore swStepAP: " + ex.Message); }
                 if (appearancesAvailable)
@@ -135,11 +148,16 @@ namespace Peak.NextStep
                 // The ladder knows which components the export revealed: with
                 // includeHidden, a hidden component counts as exported, and only
                 // suppression and envelopes still exclude.
-                var occurrences = AppearanceLadder.Resolve(model, AddIn.Log, includeHidden);
+                var occurrences = AppearanceLadder.Resolve(model, AddIn.Log, includeHidden, keep);
 
-                int skipped = occurrences.Count(o => !o.Exported);
+                int unselected = occurrences.Count(
+                    o => !o.Exported && o.ExcludedBecause == AppearanceLadder.NotSelected);
+                int skipped = occurrences.Count(o => !o.Exported) - unselected;
                 if (skipped > 0)
                     notes.Add($"{skipped} component(s) hidden or suppressed, and not exported.");
+                if (unselected > 0)
+                    notes.Add($"{unselected} component(s) outside the selection, "
+                            + "and not exported.");
 
                 int needFixing = occurrences.Count(o => o.Exported && o.OverridesPartInternals);
                 if (needFixing == 0)
@@ -194,8 +212,16 @@ namespace Peak.NextStep
         }
 
         /// <summary>
-        /// Shows the hidden components for the export, and returns the ones it
-        /// changed so that the caller can hide them again.
+        /// Puts every component into the visibility the export needs, and
+        /// returns what it changed so that the caller can put it back.
+        ///
+        /// One pass, not two. Revealing hidden components and hiding the ones
+        /// outside a selection both act on the same property, and a component
+        /// that is hidden AND unselected is touched by both - run as separate
+        /// passes with separate undo lists, the order the two restores happen
+        /// in decides whether the user gets their assembly back. Deciding the
+        /// wanted state once, and recording only what actually changed, has no
+        /// such ordering.
         ///
         /// A silent SaveAs3 leaves out the hidden components, and the API has no
         /// preference to change this. The STEP options page lists every setting
@@ -210,10 +236,16 @@ namespace Peak.NextStep
         /// never exports suppressed components. The dialog says so, instead of
         /// working around it.
         /// </summary>
-        private static List<IComponent2> RevealHidden(IModelDoc2 model)
+        private static List<KeyValuePair<IComponent2, int>> ApplyVisibility(
+            IModelDoc2 model, bool includeHidden, HashSet<string> keep)
         {
-            var changed = new List<IComponent2>();
+            var changed = new List<KeyValuePair<IComponent2, int>>();
             if (!(model is IAssemblyDoc assy)) return changed;
+            if (!includeHidden && keep == null) return changed;
+
+            int hiddenState = (int)swComponentVisibilityState_e.swComponentHidden;
+            int visibleState = (int)swComponentVisibilityState_e.swComponentVisible;
+            int revealed = 0, trimmed = 0;
 
             foreach (var o in assy.GetComponents(false) as object[] ?? new object[0])
             {
@@ -221,35 +253,46 @@ namespace Peak.NextStep
                 if (comp == null) continue;
                 try
                 {
-                    // A suppressed component has no geometry to write, so to
-                    // show it achieves nothing.
+                    // A suppressed component has no geometry to write, so
+                    // neither showing nor hiding it achieves anything.
                     if (comp.GetSuppression2() == (int)swComponentSuppressionState_e.swComponentSuppressed)
                         continue;
-                    if (comp.Visible != (int)swComponentVisibilityState_e.swComponentHidden)
-                        continue;
 
-                    comp.Visible = (int)swComponentVisibilityState_e.swComponentVisible;
-                    changed.Add(comp);
+                    int was = comp.Visible;
+                    int want = was;
+                    if (keep != null && !keep.Contains(comp.Name2 ?? ""))
+                        want = hiddenState;
+                    else if (includeHidden)
+                        want = visibleState;
+
+                    if (want == was) continue;
+                    comp.Visible = want;
+                    changed.Add(new KeyValuePair<IComponent2, int>(comp, was));
+                    if (want == visibleState) revealed++; else trimmed++;
                 }
-                catch (Exception ex) { AddIn.Log($"reveal {comp.Name2}: {ex.Message}"); }
+                catch (Exception ex) { AddIn.Log($"visibility {comp.Name2}: {ex.Message}"); }
             }
 
-            if (changed.Count > 0)
-                AddIn.Log($"    revealed {changed.Count} hidden component(s) for the export");
+            if (revealed > 0)
+                AddIn.Log($"    revealed {revealed} hidden component(s) for the export");
+            if (trimmed > 0)
+                AddIn.Log($"    hid {trimmed} component(s) outside the selection");
             return changed;
         }
 
         /// <summary>
-        /// Hides every component that RevealHidden changed. This runs in a
-        /// finally block. To leave an assembly with components shown that the
-        /// user had hidden is a worse defect than any this add-in repairs.
+        /// Puts back every visibility ApplyVisibility changed. This runs in a
+        /// finally block. To leave an assembly showing components the user had
+        /// hidden - or missing the ones the export trimmed - is a worse defect
+        /// than any this add-in repairs.
         /// </summary>
-        private static void Rehide(List<IComponent2> revealed)
+        private static void RestoreVisibility(
+            List<KeyValuePair<IComponent2, int>> changed)
         {
-            foreach (var comp in revealed)
+            foreach (var entry in changed)
             {
-                try { comp.Visible = (int)swComponentVisibilityState_e.swComponentHidden; }
-                catch (Exception ex) { AddIn.Log($"re-hide failed: {ex.Message}"); }
+                try { entry.Key.Visible = entry.Value; }
+                catch (Exception ex) { AddIn.Log($"restore visibility: {ex.Message}"); }
             }
         }
     }
