@@ -72,6 +72,15 @@ not, including Fusion 360.
 **Include hidden components (default off).** Suppressed components are never
 exported.
 
+**Export only the selected components (default off).** Available when something
+is selected. Everything inside a selected assembly comes with it, and the
+assemblies above it stay in the file so that the branch survives. A face picked
+in the graphics area counts as its component.
+
+SOLIDWORKS Isolate does not carry over to the export. Unless you set its display
+to Hidden, isolated-out components stay visible and go into the file. Select the
+components you want instead.
+
 **Engineering material (default off).** Writes the material name and density.
 
 With de-instancing on, the names are numbered per colour: `Plain Carbon Steel`,
